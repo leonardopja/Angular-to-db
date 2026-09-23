@@ -75,11 +75,14 @@
 <main class="dashboard-shell">
     <header class="topbar">
         <a class="brand" href="#home" aria-label="Shiftwork home">SHIFT<span>WORK</span></a>
-        <nav aria-label="Main navigation"><a class="active" href="#home">My shifts</a><a href="#add-shift">Add a
-                shift</a><a href="#profile">Edit profile</a></nav>
+        <nav aria-label="Main navigation"><button type="button" [class.active]="activeView === 'home'"
+                (click)="navigate('home')">Home</button><button type="button" [class.active]="activeView === 'shifts'"
+                (click)="navigate('shifts')">My shifts</button><button type="button" (click)="navigate('home')">Add a
+                shift</button><button type="button" (click)="navigate('home')">Edit profile</button></nav>
         <div class="user-actions"><span>Hello, {{ loggedInUser }}</span><button type="button" class="logout-button"
                 (click)="logout()">Log out</button></div>
     </header>
+    @if (activeView === 'home') {
     <section class="dashboard-content">
         <div class="dashboard-heading">
             <div>
@@ -133,5 +136,38 @@
             </aside>
         </div>
     </section>
+    } @else {
+    <section class="dashboard-content shifts-page">
+        <div class="dashboard-heading">
+            <div>
+                <p class="eyebrow">YOUR WORKDAY / SCHEDULE</p>
+                <h1>My shifts</h1>
+                <p>Keep your upcoming work in one clear view.</p>
+            </div><button type="button" class="primary-action" (click)="navigate('home')">+ Add a shift</button>
+        </div>
+        <section class="filter-bar" aria-label="Shift filters"><label>Shift place<select [(ngModel)]="shiftPlaceFilter">
+                    <option value="">All places</option>
+                    <option value="Northside Cafe">Northside Cafe</option>
+                    <option value="Harbor House">Harbor House</option>
+                    <option value="The Green Room">The Green Room</option>
+                </select></label><label>From date<input type="date" [(ngModel)]="shiftDateFilter" /></label><button
+                type="button" class="clear-filter" (click)="shiftPlaceFilter = ''; shiftDateFilter = ''">Clear
+                filters</button></section>
+        <section class="shift-table-wrap">
+            <div class="table-summary"><span>{{ filteredShifts.length }} shifts found</span><span>Total projected:
+                    <strong>${{ filteredShifts.length * 96 | number:'1.2-2' }}</strong></span></div>
+            <div class="shift-table">
+                <div class="table-row table-header"><span>Date</span><span>Beginning time</span><span>End
+                        time</span><span>Price per hour</span><span>Shift place</span><span>Total per shift</span></div>
+                @for (shift of filteredShifts; track shift.date) {<button type="button" class="table-row table-data"
+                    (click)="navigate('home')"><span><strong>{{ shift.day }} {{ shift.month }}</strong><small>{{
+                            shift.name }}</small></span><span>{{ shift.start }}</span><span>{{ shift.end
+                        }}</span><span>${{ shift.rate }}.00</span><span>{{ shift.place }}</span><span
+                        class="total-cell">${{ shift.rate * 6 }}.00 &rarr;</span></button>} @empty {<p
+                    class="empty-state">No shifts match these filters.</p>}
+            </div>
+        </section>
+    </section>
+    }
 </main>
 }
