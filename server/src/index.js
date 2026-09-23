@@ -23,6 +23,32 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema);
 
+const shiftSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    date: { type: String, required: true },
+    startTime: { type: String, required: true },
+    endTime: { type: String, required: true },
+    hourlyWage: { type: Number, required: true, min: 1 },
+    workplace: { type: String, required: true, trim: true },
+    shiftName: { type: String, required: true, minlength: 2, trim: true },
+    comments: { type: String, trim: true, default: '' }
+}, { timestamps: true });
+
+const Shift = mongoose.model('Shift', shiftSchema);
+
+const authenticate = (request, response, next) => {
+    const authorization = request.headers.authorization || '';
+    const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
+    if (!token) return response.status(401).json({ message: 'Authentication is required.' });
+
+    try {
+        request.user = jwt.verify(token, process.env.JWT_SECRET || 'development-secret');
+        return next();
+    } catch (_error) {
+        return response.status(401).json({ message: 'Your session has expired. Please sign in again.' });
+    }
+};
+
 app.get('/api/health', (_request, response) => {
     response.json({ status: 'ok', database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected' });
 });
@@ -59,6 +85,28 @@ app.post('/api/auth/login', async (request, response) => {
         return response.json({ token, expiresIn: 3600, user: { firstName: user.firstName, lastName: user.lastName, email: user.email } });
     } catch (_error) {
         return response.status(500).json({ message: 'Unable to sign in.' });
+    }
+});
+
+app.get('/api/shifts', authenticate, async (request, response) => {
+    try {
+        const shifts = await Shift.find({ userId: request.user.userId }).sort({ date: 1, startTime: 1 });
+        return response.json(shifts);
+    } catch (_error) {
+        return response.status(500).json({ message: 'Unable to load shifts.' });
+    }
+});
+
+app.post('/api/shifts', authenticate, async (request, response) => {
+    try {
+        const { date, startTime, endTime, hourlyWage, workplace, shiftName, comments } = request.body;
+        if (!date || !startTime || !endTime || !hourlyWage || !workplace || !shiftName) {
+            return response.status(400).json({ message: 'All required shift fields must be completed.' });
+        }
+        const shift = await Shift.create({ userId: request.user.userId, date, startTime, endTime, hourlyWage, workplace, shiftName, comments });
+        return response.status(201).json(shift);
+    } catch (_error) {
+        return response.status(500).json({ message: 'Unable to save the shift.' });
     }
 });
 

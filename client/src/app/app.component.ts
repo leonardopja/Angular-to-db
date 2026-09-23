@@ -5,6 +5,8 @@ import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angu
 
 type RegistrationResponse = { message: string };
 type LoginResponse = { token: string; expiresIn: number; user: { firstName: string; lastName: string; email: string } };
+type Shift = { date: string; day: string; month: string; start: string; end: string; rate: number; place: string; name: string };
+type ApiShift = { _id: string; date: string; startTime: string; endTime: string; hourlyWage: number; workplace: string; shiftName: string };
 
 @Component({
     selector: 'app-root',
@@ -25,7 +27,7 @@ export class AppComponent {
     shiftDateFilter = '';
     addShiftMessage = '';
 
-    readonly shifts = [
+    shifts: Shift[] = [
         { date: '2026-06-24', day: '24', month: 'JUN', start: '08:00', end: '14:00', rate: 16, place: 'Northside Cafe', name: 'Morning service shift' },
         { date: '2026-06-27', day: '27', month: 'JUN', start: '16:00', end: '22:00', rate: 18, place: 'Harbor House', name: 'Evening floor shift' },
         { date: '2026-07-02', day: '02', month: 'JUL', start: '09:00', end: '15:00', rate: 16, place: 'Northside Cafe', name: 'Breakfast service shift' },
@@ -82,24 +84,18 @@ export class AppComponent {
         if (this.addShiftForm.invalid) return;
 
         this.isSubmitting = true;
-        const shift = this.addShiftForm.getRawValue();
-        const date = new Date(`${shift.date}T00:00:00`);
-        const month = date.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-        this.shifts.unshift({
-            date: shift.date,
-            day: date.getDate().toString().padStart(2, '0'),
-            month,
-            start: shift.startTime,
-            end: shift.endTime,
-            rate: shift.hourlyWage,
-            place: shift.workplace,
-            name: shift.shiftName
+        this.http.post<ApiShift>('http://localhost:3000/api/shifts', this.addShiftForm.getRawValue(), { headers: this.authHeaders() }).subscribe({
+            next: (savedShift) => {
+                this.shifts.unshift(this.toDisplayShift(savedShift));
+                this.isSubmitting = false;
+                this.addShiftMessage = 'Your shift was saved successfully.';
+                this.addShiftForm.reset({ hourlyWage: 16, comments: '' });
+            },
+            error: (error) => {
+                this.serverError = error.error?.message || 'Unable to save the shift.';
+                this.isSubmitting = false;
+            }
         });
-        window.setTimeout(() => {
-            this.isSubmitting = false;
-            this.addShiftMessage = 'Your shift was saved successfully.';
-            this.addShiftForm.reset({ hourlyWage: 16, comments: '' });
-        }, 650);
     }
 
     get passwordMismatch(): boolean {
@@ -141,12 +137,38 @@ export class AppComponent {
                 this.loggedInUser = response.user.firstName;
                 this.successMessage = `Welcome back, ${response.user.firstName}!`;
                 this.isSubmitting = false;
+                this.loadShifts();
             },
             error: (error) => {
                 this.serverError = error.error?.message || 'Unable to sign in.';
                 this.isSubmitting = false;
             }
         });
+    }
+
+    private loadShifts(): void {
+        this.http.get<ApiShift[]>('http://localhost:3000/api/shifts', { headers: this.authHeaders() }).subscribe({
+            next: (apiShifts) => this.shifts = apiShifts.map((shift) => this.toDisplayShift(shift)),
+            error: (error) => this.serverError = error.error?.message || 'Unable to load shifts.'
+        });
+    }
+
+    private authHeaders() {
+        return { Authorization: `Bearer ${localStorage.getItem('shiftwork_token') || ''}` };
+    }
+
+    private toDisplayShift(shift: ApiShift): Shift {
+        const date = new Date(`${shift.date}T00:00:00`);
+        return {
+            date: shift.date,
+            day: date.getDate().toString().padStart(2, '0'),
+            month: date.toLocaleString('en-US', { month: 'short' }).toUpperCase(),
+            start: shift.startTime,
+            end: shift.endTime,
+            rate: shift.hourlyWage,
+            place: shift.workplace,
+            name: shift.shiftName
+        };
     }
 
     logout(): void {
