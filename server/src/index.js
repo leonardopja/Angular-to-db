@@ -141,6 +141,24 @@ app.post('/api/shifts', authenticate, async (request, response) => {
     }
 });
 
+app.put('/api/shifts/:id', authenticate, async (request, response) => {
+    try {
+        const { date, startTime, endTime, hourlyWage, workplace, shiftName, comments } = request.body;
+        if (!date || !startTime || !endTime || !hourlyWage || !workplace || !shiftName) {
+            return response.status(400).json({ message: 'All required shift fields must be completed.' });
+        }
+        const shift = await Shift.findOneAndUpdate(
+            { _id: request.params.id, userId: request.user.userId },
+            { date, startTime, endTime, hourlyWage, workplace, shiftName, comments },
+            { new: true, runValidators: true }
+        );
+        if (!shift) return response.status(404).json({ message: 'Shift was not found.' });
+        return response.json(shift);
+    } catch (_error) {
+        return response.status(500).json({ message: 'Unable to update the shift.' });
+    }
+});
+
 const start = async () => {
     if (process.env.MONGODB_URI) {
         await mongoose.connect(process.env.MONGODB_URI);

@@ -5,8 +5,8 @@ import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angu
 
 type RegistrationResponse = { message: string };
 type LoginResponse = { token: string; expiresIn: number; user: { firstName: string; lastName: string; email: string; birthDate: string } };
-type Shift = { date: string; day: string; month: string; start: string; end: string; rate: number; place: string; name: string };
-type ApiShift = { _id: string; date: string; startTime: string; endTime: string; hourlyWage: number; workplace: string; shiftName: string };
+type Shift = { id?: string; date: string; day: string; month: string; start: string; end: string; rate: number; place: string; name: string };
+type ApiShift = { _id: string; date: string; startTime: string; endTime: string; hourlyWage: number; workplace: string; shiftName: string; comments?: string };
 
 @Component({
     selector: 'app-root',
@@ -22,10 +22,11 @@ export class AppComponent {
     serverError = '';
     activeMode: 'register' | 'login' = 'register';
     loggedInUser = '';
-    activeView: 'home' | 'shifts' | 'add' | 'profile' = 'home';
+    activeView: 'home' | 'shifts' | 'add' | 'edit' | 'profile' = 'home';
     shiftPlaceFilter = '';
     shiftDateFilter = '';
     addShiftMessage = '';
+    selectedShiftId = '';
 
     shifts: Shift[] = [
         { date: '2026-06-24', day: '24', month: 'JUN', start: '08:00', end: '14:00', rate: 16, place: 'Northside Cafe', name: 'Morning service shift' },
@@ -82,11 +83,18 @@ export class AppComponent {
         this.serverError = '';
     }
 
-    navigate(view: 'home' | 'shifts' | 'add' | 'profile'): void {
+    navigate(view: 'home' | 'shifts' | 'add' | 'edit' | 'profile'): void {
         this.activeView = view;
         this.addShiftMessage = '';
         this.serverError = '';
         if (view === 'profile') this.loadProfile();
+    }
+
+    openEditShift(shift: Shift): void {
+        if (!shift.id) return;
+        this.selectedShiftId = shift.id;
+        this.addShiftForm.patchValue({ date: shift.date, startTime: shift.start, endTime: shift.end, hourlyWage: shift.rate, workplace: shift.place, shiftName: shift.name });
+        this.navigate('edit');
     }
 
     get profilePasswordMismatch(): boolean {
@@ -121,11 +129,21 @@ export class AppComponent {
         if (this.addShiftForm.invalid) return;
 
         this.isSubmitting = true;
-        this.http.post<ApiShift>('http://localhost:3000/api/shifts', this.addShiftForm.getRawValue(), { headers: this.authHeaders() }).subscribe({
+        const shiftRequest = this.selectedShiftId
+            ? this.http.put<ApiShift>(`http://localhost:3000/api/shifts/${this.selectedShiftId}`, this.addShiftForm.getRawValue(), { headers: this.authHeaders() })
+            : this.http.post<ApiShift>('http://localhost:3000/api/shifts', this.addShiftForm.getRawValue(), { headers: this.authHeaders() });
+        shiftRequest.subscribe({
             next: (savedShift) => {
-                this.shifts.unshift(this.toDisplayShift(savedShift));
+                const displayShift = this.toDisplayShift(savedShift);
+                if (this.selectedShiftId) {
+                    const index = this.shifts.findIndex((shift) => shift.id === this.selectedShiftId);
+                    if (index >= 0) this.shifts[index] = displayShift;
+                } else {
+                    this.shifts.unshift(displayShift);
+                }
                 this.isSubmitting = false;
-                this.addShiftMessage = 'Your shift was saved successfully.';
+                this.addShiftMessage = this.selectedShiftId ? 'Your shift was updated successfully.' : 'Your shift was saved successfully.';
+                this.selectedShiftId = '';
                 this.addShiftForm.reset({ hourlyWage: 16, comments: '' });
             },
             error: (error) => {
@@ -208,6 +226,7 @@ export class AppComponent {
             date: shift.date,
             day: date.getDate().toString().padStart(2, '0'),
             month: date.toLocaleString('en-US', { month: 'short' }).toUpperCase(),
+            id: shift._id,
             start: shift.startTime,
             end: shift.endTime,
             rate: shift.hourlyWage,

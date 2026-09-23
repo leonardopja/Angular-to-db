@@ -160,7 +160,7 @@
                 <div class="table-row table-header"><span>Date</span><span>Beginning time</span><span>End
                         time</span><span>Price per hour</span><span>Shift place</span><span>Total per shift</span></div>
                 @for (shift of filteredShifts; track shift.date) {<button type="button" class="table-row table-data"
-                    (click)="navigate('home')"><span><strong>{{ shift.day }} {{ shift.month }}</strong><small>{{
+                    (click)="openEditShift(shift)"><span><strong>{{ shift.day }} {{ shift.month }}</strong><small>{{
                             shift.name }}</small></span><span>{{ shift.start }}</span><span>{{ shift.end
                         }}</span><span>${{ shift.rate }}.00</span><span>{{ shift.place }}</span><span
                         class="total-cell">${{ shift.rate * 6 }}.00 &rarr;</span></button>} @empty {<p
@@ -168,19 +168,19 @@
             </div>
         </section>
     </section>
-    } @else if (activeView === 'add') {
+    } @else if (activeView === 'add' || activeView === 'edit') {
     <section class="dashboard-content add-shift-page">
-        <div class="dashboard-heading"><div><p class="eyebrow">YOUR WORKDAY / PLANNING</p><h1>Add a shift</h1><p>Create a shift and keep all the details in one place.</p></div></div>
+        <div class="dashboard-heading"><div><p class="eyebrow">YOUR WORKDAY / PLANNING</p><h1>{{ activeView === 'edit' ? 'Edit shift' : 'Add a shift' }}</h1><p>{{ activeView === 'edit' ? 'Update the details for this shift.' : 'Create a shift and keep all the details in one place.' }}</p></div></div>
         <section class="add-shift-layout">
             <form class="shift-form" [formGroup]="addShiftForm" (ngSubmit)="saveShift()" novalidate>
-                <div class="section-heading"><div><p class="eyebrow">SHIFT DETAILS</p><h2>New shift</h2></div><span class="required-note">* Required fields</span></div>
+                <div class="section-heading"><div><p class="eyebrow">SHIFT DETAILS</p><h2>{{ activeView === 'edit' ? 'Update shift' : 'New shift' }}</h2></div><span class="required-note">* Required fields</span></div>
                 <div class="field-row"><label>Date<input type="date" formControlName="date" />@if (addShiftForm.controls.date.touched && addShiftForm.controls.date.invalid) {<small>Date is required.</small>}</label><label>Workplace<select formControlName="workplace"><option value="">Choose a workplace</option><option value="Northside Cafe">Northside Cafe</option><option value="Harbor House">Harbor House</option><option value="The Green Room">The Green Room</option></select>@if (addShiftForm.controls.workplace.touched && addShiftForm.controls.workplace.invalid) {<small>Choose a workplace.</small>}</label></div>
                 <div class="field-row"><label>Start time<input type="time" formControlName="startTime" />@if (addShiftForm.controls.startTime.touched && addShiftForm.controls.startTime.invalid) {<small>Start time is required.</small>}</label><label>End time<input type="time" formControlName="endTime" />@if (addShiftForm.controls.endTime.touched && addShiftForm.controls.endTime.invalid) {<small>End time is required.</small>}</label></div>
                 <div class="field-row"><label>Hourly wage<input type="number" min="1" step=".5" formControlName="hourlyWage" />@if (addShiftForm.controls.hourlyWage.touched && addShiftForm.controls.hourlyWage.invalid) {<small>Enter a valid wage.</small>}</label><label>Shift name<input type="text" formControlName="shiftName" placeholder="Morning service shift" />@if (addShiftForm.controls.shiftName.touched && addShiftForm.controls.shiftName.invalid) {<small>Enter a shift name.</small>}</label></div>
                 <label>Comments <textarea rows="4" formControlName="comments" placeholder="Add any useful details about this shift..."></textarea></label>
                 @if (addShiftMessage) { <p class="message success">{{ addShiftMessage }}</p> }
                 @if (isSubmitting) { <div class="progress-track" aria-label="Saving shift"><span></span></div> }
-                <div class="form-actions"><button type="button" class="secondary-action" (click)="navigate('home')">Cancel</button><button type="submit" class="primary-action" [disabled]="isSubmitting">{{ isSubmitting ? 'Saving shift...' : 'Save shift' }} <span aria-hidden="true">-&gt;</span></button></div>
+                <div class="form-actions"><button type="button" class="secondary-action" (click)="navigate('shifts')">Cancel</button><button type="submit" class="primary-action" [disabled]="isSubmitting">{{ isSubmitting ? 'Saving shift...' : activeView === 'edit' ? 'Update shift' : 'Save shift' }} <span aria-hidden="true">-&gt;</span></button></div>
             </form>
             <aside class="shift-tip"><p class="eyebrow">GOOD TO KNOW</p><h2>Make every shift count.</h2><p>Use a unique name so you can find this shift quickly later. The date, times and workplace will appear in your My shifts table.</p><div class="tip-line"><span>01</span><span>All fields are editable later.</span></div><div class="tip-line"><span>02</span><span>Your comments stay private to your account.</span></div></aside>
         </section>
