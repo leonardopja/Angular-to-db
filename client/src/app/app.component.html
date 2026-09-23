@@ -77,7 +77,7 @@
         <a class="brand" href="#home" aria-label="Shiftwork home">SHIFT<span>WORK</span></a>
         <nav aria-label="Main navigation"><button type="button" [class.active]="activeView === 'home'"
                 (click)="navigate('home')">Home</button><button type="button" [class.active]="activeView === 'shifts'"
-                (click)="navigate('shifts')">My shifts</button><button type="button" (click)="navigate('home')">Add a
+                (click)="navigate('shifts')">My shifts</button><button type="button" [class.active]="activeView === 'add'" (click)="navigate('add')">Add a
                 shift</button><button type="button" (click)="navigate('home')">Edit profile</button></nav>
         <div class="user-actions"><span>Hello, {{ loggedInUser }}</span><button type="button" class="logout-button"
                 (click)="logout()">Log out</button></div>
@@ -89,7 +89,7 @@
                 <p class="eyebrow">YOUR WORKDAY / OVERVIEW</p>
                 <h1>Good morning, {{ loggedInUser }}.</h1>
                 <p>Here is what is happening with your shifts this week.</p>
-            </div><button type="button" class="primary-action">+ Add a shift</button>
+            </div><button type="button" class="primary-action" (click)="navigate('add')">+ Add a shift</button>
         </div>
         <div class="stats-grid">
             <article class="stat-card"><span class="stat-label">Upcoming shifts</span><strong>04</strong><small>Next 30
@@ -136,14 +136,14 @@
             </aside>
         </div>
     </section>
-    } @else {
+    } @else if (activeView === 'shifts') {
     <section class="dashboard-content shifts-page">
         <div class="dashboard-heading">
             <div>
                 <p class="eyebrow">YOUR WORKDAY / SCHEDULE</p>
                 <h1>My shifts</h1>
                 <p>Keep your upcoming work in one clear view.</p>
-            </div><button type="button" class="primary-action" (click)="navigate('home')">+ Add a shift</button>
+            </div><button type="button" class="primary-action" (click)="navigate('add')">+ Add a shift</button>
         </div>
         <section class="filter-bar" aria-label="Shift filters"><label>Shift place<select [(ngModel)]="shiftPlaceFilter">
                     <option value="">All places</option>
@@ -166,6 +166,23 @@
                         class="total-cell">${{ shift.rate * 6 }}.00 &rarr;</span></button>} @empty {<p
                     class="empty-state">No shifts match these filters.</p>}
             </div>
+        </section>
+    </section>
+    } @else {
+    <section class="dashboard-content add-shift-page">
+        <div class="dashboard-heading"><div><p class="eyebrow">YOUR WORKDAY / PLANNING</p><h1>Add a shift</h1><p>Create a shift and keep all the details in one place.</p></div></div>
+        <section class="add-shift-layout">
+            <form class="shift-form" [formGroup]="addShiftForm" (ngSubmit)="saveShift()" novalidate>
+                <div class="section-heading"><div><p class="eyebrow">SHIFT DETAILS</p><h2>New shift</h2></div><span class="required-note">* Required fields</span></div>
+                <div class="field-row"><label>Date<input type="date" formControlName="date" />@if (addShiftForm.controls.date.touched && addShiftForm.controls.date.invalid) {<small>Date is required.</small>}</label><label>Workplace<select formControlName="workplace"><option value="">Choose a workplace</option><option value="Northside Cafe">Northside Cafe</option><option value="Harbor House">Harbor House</option><option value="The Green Room">The Green Room</option></select>@if (addShiftForm.controls.workplace.touched && addShiftForm.controls.workplace.invalid) {<small>Choose a workplace.</small>}</label></div>
+                <div class="field-row"><label>Start time<input type="time" formControlName="startTime" />@if (addShiftForm.controls.startTime.touched && addShiftForm.controls.startTime.invalid) {<small>Start time is required.</small>}</label><label>End time<input type="time" formControlName="endTime" />@if (addShiftForm.controls.endTime.touched && addShiftForm.controls.endTime.invalid) {<small>End time is required.</small>}</label></div>
+                <div class="field-row"><label>Hourly wage<input type="number" min="1" step=".5" formControlName="hourlyWage" />@if (addShiftForm.controls.hourlyWage.touched && addShiftForm.controls.hourlyWage.invalid) {<small>Enter a valid wage.</small>}</label><label>Shift name<input type="text" formControlName="shiftName" placeholder="Morning service shift" />@if (addShiftForm.controls.shiftName.touched && addShiftForm.controls.shiftName.invalid) {<small>Enter a shift name.</small>}</label></div>
+                <label>Comments <textarea rows="4" formControlName="comments" placeholder="Add any useful details about this shift..."></textarea></label>
+                @if (addShiftMessage) { <p class="message success">{{ addShiftMessage }}</p> }
+                @if (isSubmitting) { <div class="progress-track" aria-label="Saving shift"><span></span></div> }
+                <div class="form-actions"><button type="button" class="secondary-action" (click)="navigate('home')">Cancel</button><button type="submit" class="primary-action" [disabled]="isSubmitting">{{ isSubmitting ? 'Saving shift...' : 'Save shift' }} <span aria-hidden="true">-&gt;</span></button></div>
+            </form>
+            <aside class="shift-tip"><p class="eyebrow">GOOD TO KNOW</p><h2>Make every shift count.</h2><p>Use a unique name so you can find this shift quickly later. The date, times and workplace will appear in your My shifts table.</p><div class="tip-line"><span>01</span><span>All fields are editable later.</span></div><div class="tip-line"><span>02</span><span>Your comments stay private to your account.</span></div></aside>
         </section>
     </section>
     }

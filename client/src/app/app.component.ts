@@ -20,9 +20,10 @@ export class AppComponent {
     serverError = '';
     activeMode: 'register' | 'login' = 'register';
     loggedInUser = '';
-    activeView: 'home' | 'shifts' = 'home';
+    activeView: 'home' | 'shifts' | 'add' = 'home';
     shiftPlaceFilter = '';
     shiftDateFilter = '';
+    addShiftMessage = '';
 
     readonly shifts = [
         { date: '2026-06-24', day: '24', month: 'JUN', start: '08:00', end: '14:00', rate: 16, place: 'Northside Cafe', name: 'Morning service shift' },
@@ -46,6 +47,16 @@ export class AppComponent {
         password: ['', [Validators.required, Validators.minLength(6)]]
     });
 
+    readonly addShiftForm = this.formBuilder.nonNullable.group({
+        date: ['', Validators.required],
+        startTime: ['', Validators.required],
+        endTime: ['', Validators.required],
+        hourlyWage: [16, [Validators.required, Validators.min(1)]],
+        workplace: ['', Validators.required],
+        shiftName: ['', [Validators.required, Validators.minLength(2)]],
+        comments: ['']
+    });
+
     get filteredShifts() {
         return this.shifts.filter((shift) => {
             const matchesPlace = !this.shiftPlaceFilter || shift.place === this.shiftPlaceFilter;
@@ -60,8 +71,35 @@ export class AppComponent {
         this.serverError = '';
     }
 
-    navigate(view: 'home' | 'shifts'): void {
+    navigate(view: 'home' | 'shifts' | 'add'): void {
         this.activeView = view;
+        this.addShiftMessage = '';
+    }
+
+    saveShift(): void {
+        this.addShiftMessage = '';
+        this.addShiftForm.markAllAsTouched();
+        if (this.addShiftForm.invalid) return;
+
+        this.isSubmitting = true;
+        const shift = this.addShiftForm.getRawValue();
+        const date = new Date(`${shift.date}T00:00:00`);
+        const month = date.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+        this.shifts.unshift({
+            date: shift.date,
+            day: date.getDate().toString().padStart(2, '0'),
+            month,
+            start: shift.startTime,
+            end: shift.endTime,
+            rate: shift.hourlyWage,
+            place: shift.workplace,
+            name: shift.shiftName
+        });
+        window.setTimeout(() => {
+            this.isSubmitting = false;
+            this.addShiftMessage = 'Your shift was saved successfully.';
+            this.addShiftForm.reset({ hourlyWage: 16, comments: '' });
+        }, 650);
     }
 
     get passwordMismatch(): boolean {

@@ -224,6 +224,9 @@ button:disabled {
     border-bottom: 2px solid #d65a31;
 }
 
+.topbar nav button { width: auto; border-radius: 0; background: transparent; color: #60758a; cursor: pointer; padding: 1.65rem 0 1.45rem; font-size: .87rem; font-weight: 600; }
+.topbar nav button.active, .topbar nav button:hover { background: transparent; color: #d65a31; border-bottom: 2px solid #d65a31; }
+
 .user-actions {
     display: flex;
     align-items: center;
@@ -567,6 +570,26 @@ button:disabled {
     text-align: center;
 }
 
+.add-shift-layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(260px, .75fr); gap: 1rem; }
+.shift-form, .shift-tip { background: #fff; border: 1px solid #e3ebf1; border-radius: 6px; padding: 1.5rem; }
+.shift-form { display: grid; gap: 1.15rem; }
+.required-note { color: #7890a4; font-size: .78rem; }
+.shift-form select, .shift-form textarea { width: 100%; border: 1px solid #cbd8e3; border-radius: 4px; background: #fff; color: #102a43; padding: .85rem .9rem; font: inherit; font-weight: 400; outline: none; }
+.shift-form textarea { resize: vertical; }
+.shift-form select:focus, .shift-form textarea:focus { border-color: #d65a31; box-shadow: 0 0 0 3px #d65a3122; }
+.form-actions { display: flex; justify-content: flex-end; gap: .8rem; padding-top: .5rem; }
+.form-actions button { width: auto; }
+.secondary-action { background: #edf2f6; color: #29445a; }
+.secondary-action:hover { background: #dce6ed; }
+.progress-track { height: 4px; overflow: hidden; border-radius: 4px; background: #f5d7cc; }
+.progress-track span { display: block; width: 45%; height: 100%; background: #d65a31; animation: progress-slide 1s ease-in-out infinite alternate; }
+@keyframes progress-slide { from { transform: translateX(-100%); } to { transform: translateX(220%); } }
+.shift-tip { background: #102a43; color: #f8fafc; }
+.shift-tip h2 { color: #fff; font-size: 1.5rem; margin-bottom: 1rem; }
+.shift-tip > p:not(.eyebrow) { color: #b3c9d9; font-size: .9rem; line-height: 1.7; }
+.tip-line { display: flex; gap: .8rem; border-top: 1px solid #31506a; color: #dbe8f1; font-size: .78rem; padding: 1rem 0; }
+.tip-line span:first-child { color: #ef8354; font-weight: 700; }
+
 .message {
     border-radius: 4px;
     padding: .8rem 1rem;
@@ -627,6 +650,9 @@ button:disabled {
     .dashboard-grid {
         grid-template-columns: 1fr;
     }
+
+    .add-shift-layout { grid-template-columns: 1fr; }
+    .topbar nav button { padding: .4rem 0; }
 
     .filter-bar {
         align-items: stretch;
