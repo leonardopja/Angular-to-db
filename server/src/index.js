@@ -18,7 +18,8 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true, minlength: 6 },
     firstName: { type: String, required: true, minlength: 2, trim: true },
     lastName: { type: String, required: true, minlength: 2, trim: true },
-    birthDate: { type: Date, required: true }
+    birthDate: { type: Date, required: true },
+    role: { type: String, enum: ['worker', 'admin'], default: 'worker' }
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);
@@ -47,6 +48,11 @@ const authenticate = (request, response, next) => {
     } catch (_error) {
         return response.status(401).json({ message: 'Your session has expired. Please sign in again.' });
     }
+};
+
+const requireAdmin = (request, response, next) => {
+    if (request.user.role !== 'admin') return response.status(403).json({ message: 'Administrator access is required.' });
+    return next();
 };
 
 app.get('/api/health', (_request, response) => {
@@ -81,8 +87,8 @@ app.post('/api/auth/login', async (request, response) => {
         const validPassword = user ? await bcrypt.compare(password, user.password) : false;
         if (!user || !validPassword) return response.status(401).json({ message: 'Invalid email or password.' });
 
-        const token = jwt.sign({ userId: user._id.toString(), email: user.email }, process.env.JWT_SECRET || 'development-secret', { expiresIn: '60m' });
-        return response.json({ token, expiresIn: 3600, user: { firstName: user.firstName, lastName: user.lastName, email: user.email, birthDate: user.birthDate } });
+        const token = jwt.sign({ userId: user._id.toString(), email: user.email, role: user.role }, process.env.JWT_SECRET || 'development-secret', { expiresIn: '60m' });
+        return response.json({ token, expiresIn: 3600, user: { firstName: user.firstName, lastName: user.lastName, email: user.email, birthDate: user.birthDate, role: user.role } });
     } catch (_error) {
         return response.status(500).json({ message: 'Unable to sign in.' });
     }
@@ -156,6 +162,24 @@ app.put('/api/shifts/:id', authenticate, async (request, response) => {
         return response.json(shift);
     } catch (_error) {
         return response.status(500).json({ message: 'Unable to update the shift.' });
+    }
+});
+
+app.get('/api/admin/shifts', authenticate, requireAdmin, async (request, response) => {
+    try {
+        const shifts = await Shift.find().populate('userId', 'firstName lastName email').sort({ date: 1, startTime: 1 });
+        return response.json(shifts);
+    } catch (_error) {
+        return response.status(500).json({ message: 'Unable to load all shifts.' });
+    }
+});
+
+app.get('/api/admin/workers', authenticate, requireAdmin, async (request, response) => {
+    try {
+        const workers = await User.find({ role: 'worker' }).select('-password').sort({ lastName: 1, firstName: 1 });
+        return response.json(workers);
+    } catch (_error) {
+        return response.status(500).json({ message: 'Unable to load workers.' });
     }
 });
 

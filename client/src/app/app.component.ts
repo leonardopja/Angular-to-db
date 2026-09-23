@@ -1,16 +1,18 @@
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, inject } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 
 type RegistrationResponse = { message: string };
-type LoginResponse = { token: string; expiresIn: number; user: { firstName: string; lastName: string; email: string; birthDate: string } };
+type LoginResponse = { token: string; expiresIn: number; user: { firstName: string; lastName: string; email: string; birthDate: string; role: 'worker' | 'admin' } };
 type Shift = { id?: string; date: string; day: string; month: string; start: string; end: string; rate: number; place: string; name: string };
 type ApiShift = { _id: string; date: string; startTime: string; endTime: string; hourlyWage: number; workplace: string; shiftName: string; comments?: string };
+type AdminShift = ApiShift & { userId: { firstName: string; lastName: string; email: string } };
+type Worker = { _id: string; firstName: string; lastName: string; email: string; birthDate: string };
 
 @Component({
     selector: 'app-root',
-    imports: [DecimalPipe, FormsModule, ReactiveFormsModule],
+    imports: [DatePipe, DecimalPipe, FormsModule, ReactiveFormsModule],
     templateUrl: './app.component.html',
     styleUrl: './app.component.scss'
 })
@@ -22,7 +24,10 @@ export class AppComponent {
     serverError = '';
     activeMode: 'register' | 'login' = 'register';
     loggedInUser = '';
-    activeView: 'home' | 'shifts' | 'add' | 'edit' | 'profile' = 'home';
+    activeView: 'home' | 'shifts' | 'add' | 'edit' | 'profile' | 'adminShifts' | 'workers' = 'home';
+    isAdministrator = false;
+    adminShifts: AdminShift[] = [];
+    workers: Worker[] = [];
     shiftPlaceFilter = '';
     shiftDateFilter = '';
     addShiftMessage = '';
@@ -83,11 +88,13 @@ export class AppComponent {
         this.serverError = '';
     }
 
-    navigate(view: 'home' | 'shifts' | 'add' | 'edit' | 'profile'): void {
+    navigate(view: 'home' | 'shifts' | 'add' | 'edit' | 'profile' | 'adminShifts' | 'workers'): void {
         this.activeView = view;
         this.addShiftMessage = '';
         this.serverError = '';
         if (view === 'profile') this.loadProfile();
+        if (view === 'adminShifts') this.loadAdminShifts();
+        if (view === 'workers') this.loadWorkers();
     }
 
     openEditShift(shift: Shift): void {
@@ -190,10 +197,16 @@ export class AppComponent {
             next: (response) => {
                 localStorage.setItem('shiftwork_token', response.token);
                 this.loggedInUser = response.user.firstName;
+                this.isAdministrator = response.user.role === 'admin';
                 this.successMessage = `Welcome back, ${response.user.firstName}!`;
                 this.profileForm.patchValue(response.user);
                 this.isSubmitting = false;
-                this.loadShifts();
+                if (this.isAdministrator) {
+                    this.activeView = 'adminShifts';
+                    this.loadAdminShifts();
+                } else {
+                    this.loadShifts();
+                }
             },
             error: (error) => {
                 this.serverError = error.error?.message || 'Unable to sign in.';
@@ -213,6 +226,20 @@ export class AppComponent {
         this.http.get<LoginResponse['user']>('http://localhost:3000/api/me', { headers: this.authHeaders() }).subscribe({
             next: (user) => this.profileForm.patchValue(user),
             error: (error) => this.serverError = error.error?.message || 'Unable to load the profile.'
+        });
+    }
+
+    private loadAdminShifts(): void {
+        this.http.get<AdminShift[]>('http://localhost:3000/api/admin/shifts', { headers: this.authHeaders() }).subscribe({
+            next: (shifts) => this.adminShifts = shifts,
+            error: (error) => this.serverError = error.error?.message || 'Unable to load all shifts.'
+        });
+    }
+
+    private loadWorkers(): void {
+        this.http.get<Worker[]>('http://localhost:3000/api/admin/workers', { headers: this.authHeaders() }).subscribe({
+            next: (workers) => this.workers = workers,
+            error: (error) => this.serverError = error.error?.message || 'Unable to load workers.'
         });
     }
 
@@ -238,6 +265,7 @@ export class AppComponent {
     logout(): void {
         localStorage.removeItem('shiftwork_token');
         this.loggedInUser = '';
+        this.isAdministrator = false;
         this.activeView = 'home';
         this.activeMode = 'login';
         this.successMessage = '';

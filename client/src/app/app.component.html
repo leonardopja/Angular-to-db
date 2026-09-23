@@ -77,8 +77,18 @@
         <a class="brand" href="#home" aria-label="Shiftwork home">SHIFT<span>WORK</span></a>
         <nav aria-label="Main navigation"><button type="button" [class.active]="activeView === 'home'"
                 (click)="navigate('home')">Home</button><button type="button" [class.active]="activeView === 'shifts'"
-                (click)="navigate('shifts')">My shifts</button><button type="button" [class.active]="activeView === 'add'" (click)="navigate('add')">Add a
-                shift</button><button type="button" [class.active]="activeView === 'profile'" (click)="navigate('profile')">Edit profile</button></nav>
+                (click)="navigate('shifts')">My shifts</button><button type="button"
+                [class.active]="activeView === 'add'" (click)="navigate('add')">Add a
+                shift</button><button type="button" [class.active]="activeView === 'profile'"
+                (click)="navigate('profile')">Edit profile</button></nav>
+        @if (isAdministrator) {
+        <nav class="admin-nav" aria-label="Administrator navigation">
+            <button type="button" [class.active]="activeView === 'adminShifts'" (click)="navigate('adminShifts')">All
+                shifts</button>
+            <button type="button" [class.active]="activeView === 'workers'" (click)="navigate('workers')">All
+                workers</button>
+        </nav>
+        }
         <div class="user-actions"><span>Hello, {{ loggedInUser }}</span><button type="button" class="logout-button"
                 (click)="logout()">Log out</button></div>
     </header>
@@ -170,37 +180,183 @@
     </section>
     } @else if (activeView === 'add' || activeView === 'edit') {
     <section class="dashboard-content add-shift-page">
-        <div class="dashboard-heading"><div><p class="eyebrow">YOUR WORKDAY / PLANNING</p><h1>{{ activeView === 'edit' ? 'Edit shift' : 'Add a shift' }}</h1><p>{{ activeView === 'edit' ? 'Update the details for this shift.' : 'Create a shift and keep all the details in one place.' }}</p></div></div>
+        <div class="dashboard-heading">
+            <div>
+                <p class="eyebrow">YOUR WORKDAY / PLANNING</p>
+                <h1>{{ activeView === 'edit' ? 'Edit shift' : 'Add a shift' }}</h1>
+                <p>{{ activeView === 'edit' ? 'Update the details for this shift.' : 'Create a shift and keep all the
+                    details in one place.' }}</p>
+            </div>
+        </div>
         <section class="add-shift-layout">
             <form class="shift-form" [formGroup]="addShiftForm" (ngSubmit)="saveShift()" novalidate>
-                <div class="section-heading"><div><p class="eyebrow">SHIFT DETAILS</p><h2>{{ activeView === 'edit' ? 'Update shift' : 'New shift' }}</h2></div><span class="required-note">* Required fields</span></div>
-                <div class="field-row"><label>Date<input type="date" formControlName="date" />@if (addShiftForm.controls.date.touched && addShiftForm.controls.date.invalid) {<small>Date is required.</small>}</label><label>Workplace<select formControlName="workplace"><option value="">Choose a workplace</option><option value="Northside Cafe">Northside Cafe</option><option value="Harbor House">Harbor House</option><option value="The Green Room">The Green Room</option></select>@if (addShiftForm.controls.workplace.touched && addShiftForm.controls.workplace.invalid) {<small>Choose a workplace.</small>}</label></div>
-                <div class="field-row"><label>Start time<input type="time" formControlName="startTime" />@if (addShiftForm.controls.startTime.touched && addShiftForm.controls.startTime.invalid) {<small>Start time is required.</small>}</label><label>End time<input type="time" formControlName="endTime" />@if (addShiftForm.controls.endTime.touched && addShiftForm.controls.endTime.invalid) {<small>End time is required.</small>}</label></div>
-                <div class="field-row"><label>Hourly wage<input type="number" min="1" step=".5" formControlName="hourlyWage" />@if (addShiftForm.controls.hourlyWage.touched && addShiftForm.controls.hourlyWage.invalid) {<small>Enter a valid wage.</small>}</label><label>Shift name<input type="text" formControlName="shiftName" placeholder="Morning service shift" />@if (addShiftForm.controls.shiftName.touched && addShiftForm.controls.shiftName.invalid) {<small>Enter a shift name.</small>}</label></div>
-                <label>Comments <textarea rows="4" formControlName="comments" placeholder="Add any useful details about this shift..."></textarea></label>
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">SHIFT DETAILS</p>
+                        <h2>{{ activeView === 'edit' ? 'Update shift' : 'New shift' }}</h2>
+                    </div><span class="required-note">* Required fields</span>
+                </div>
+                <div class="field-row"><label>Date<input type="date" formControlName="date" />@if
+                        (addShiftForm.controls.date.touched && addShiftForm.controls.date.invalid) {<small>Date is
+                            required.</small>}</label><label>Workplace<select formControlName="workplace">
+                            <option value="">Choose a workplace</option>
+                            <option value="Northside Cafe">Northside Cafe</option>
+                            <option value="Harbor House">Harbor House</option>
+                            <option value="The Green Room">The Green Room</option>
+                        </select>@if (addShiftForm.controls.workplace.touched &&
+                        addShiftForm.controls.workplace.invalid) {<small>Choose a workplace.</small>}</label></div>
+                <div class="field-row"><label>Start time<input type="time" formControlName="startTime" />@if
+                        (addShiftForm.controls.startTime.touched && addShiftForm.controls.startTime.invalid)
+                        {<small>Start time is required.</small>}</label><label>End time<input type="time"
+                            formControlName="endTime" />@if (addShiftForm.controls.endTime.touched &&
+                        addShiftForm.controls.endTime.invalid) {<small>End time is required.</small>}</label></div>
+                <div class="field-row"><label>Hourly wage<input type="number" min="1" step=".5"
+                            formControlName="hourlyWage" />@if (addShiftForm.controls.hourlyWage.touched &&
+                        addShiftForm.controls.hourlyWage.invalid) {<small>Enter a valid
+                            wage.</small>}</label><label>Shift name<input type="text" formControlName="shiftName"
+                            placeholder="Morning service shift" />@if (addShiftForm.controls.shiftName.touched &&
+                        addShiftForm.controls.shiftName.invalid) {<small>Enter a shift name.</small>}</label></div>
+                <label>Comments <textarea rows="4" formControlName="comments"
+                        placeholder="Add any useful details about this shift..."></textarea></label>
                 @if (addShiftMessage) { <p class="message success">{{ addShiftMessage }}</p> }
                 @if (isSubmitting) { <div class="progress-track" aria-label="Saving shift"><span></span></div> }
-                <div class="form-actions"><button type="button" class="secondary-action" (click)="navigate('shifts')">Cancel</button><button type="submit" class="primary-action" [disabled]="isSubmitting">{{ isSubmitting ? 'Saving shift...' : activeView === 'edit' ? 'Update shift' : 'Save shift' }} <span aria-hidden="true">-&gt;</span></button></div>
+                <div class="form-actions"><button type="button" class="secondary-action"
+                        (click)="navigate('shifts')">Cancel</button><button type="submit" class="primary-action"
+                        [disabled]="isSubmitting">{{ isSubmitting ? 'Saving shift...' : activeView === 'edit' ? 'Update
+                        shift' : 'Save shift' }} <span aria-hidden="true">-&gt;</span></button></div>
             </form>
-            <aside class="shift-tip"><p class="eyebrow">GOOD TO KNOW</p><h2>Make every shift count.</h2><p>Use a unique name so you can find this shift quickly later. The date, times and workplace will appear in your My shifts table.</p><div class="tip-line"><span>01</span><span>All fields are editable later.</span></div><div class="tip-line"><span>02</span><span>Your comments stay private to your account.</span></div></aside>
+            <aside class="shift-tip">
+                <p class="eyebrow">GOOD TO KNOW</p>
+                <h2>Make every shift count.</h2>
+                <p>Use a unique name so you can find this shift quickly later. The date, times and workplace will appear
+                    in your My shifts table.</p>
+                <div class="tip-line"><span>01</span><span>All fields are editable later.</span></div>
+                <div class="tip-line"><span>02</span><span>Your comments stay private to your account.</span></div>
+            </aside>
+        </section>
+    </section>
+    } @else if (activeView === 'profile') {
+    <section class="dashboard-content profile-page">
+        <div class="dashboard-heading">
+            <div>
+                <p class="eyebrow">YOUR ACCOUNT / SETTINGS</p>
+                <h1>Edit profile</h1>
+                <p>Keep your personal details up to date.</p>
+            </div>
+        </div>
+        <section class="profile-layout">
+            <form class="shift-form" [formGroup]="profileForm" (ngSubmit)="updateProfile()" novalidate>
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">PERSONAL DETAILS</p>
+                        <h2>Your information</h2>
+                    </div>
+                </div>
+                <div class="field-row"><label>First name<input type="text" formControlName="firstName"
+                            autocomplete="given-name" />@if (profileForm.controls.firstName.touched &&
+                        profileForm.controls.firstName.invalid) {<small>Enter at least 2
+                            characters.</small>}</label><label>Last name<input type="text" formControlName="lastName"
+                            autocomplete="family-name" />@if (profileForm.controls.lastName.touched &&
+                        profileForm.controls.lastName.invalid) {<small>Enter at least 2 characters.</small>}</label>
+                </div>
+                <label>Email address<input type="email" formControlName="email" autocomplete="email" />@if
+                    (profileForm.controls.email.touched && profileForm.controls.email.invalid) {<small>Enter a valid
+                        email address.</small>}</label>
+                <label>Birth date<input type="date" formControlName="birthDate" />@if
+                    (profileForm.controls.birthDate.touched && profileForm.controls.birthDate.invalid) {<small>Birth
+                        date is required.</small>}</label>
+                <div class="profile-divider">
+                    <p class="eyebrow">SECURITY</p>
+                    <h2>Change password</h2>
+                    <p>Leave these fields empty to keep your current password.</p>
+                </div>
+                <div class="field-row"><label>New password<input type="password" formControlName="password"
+                            autocomplete="new-password" placeholder="6+ characters" />@if
+                        (profileForm.controls.password.touched && profileForm.controls.password.invalid) {<small>Use at
+                            least 6 characters.</small>}</label><label>Confirm new password<input type="password"
+                            formControlName="passwordConfirmation" autocomplete="new-password"
+                            placeholder="Repeat password" />@if (profilePasswordMismatch) {<small>Passwords must
+                            match.</small>}</label></div>
+                @if (successMessage) { <p class="message success">{{ successMessage }}</p> }
+                @if (serverError) { <p class="message error">{{ serverError }}</p> }
+                <div class="form-actions"><button type="button" class="secondary-action"
+                        (click)="navigate('home')">Cancel</button><button type="submit" class="primary-action"
+                        [disabled]="isSubmitting">{{ isSubmitting ? 'Updating profile...' : 'Update profile' }} <span
+                            aria-hidden="true">-&gt;</span></button></div>
+            </form>
+            <aside class="shift-tip">
+                <p class="eyebrow">ACCOUNT CARE</p>
+                <h2>Your details, your control.</h2>
+                <p>We use your profile information to keep your shifts and account communications accurate.</p>
+                <div class="tip-line"><span>01</span><span>Passwords are stored securely.</span></div>
+                <div class="tip-line"><span>02</span><span>Your profile changes apply immediately.</span></div>
+            </aside>
+        </section>
+    </section>
+    } @else if (activeView === 'adminShifts') {
+    <section class="dashboard-content admin-page">
+        <div class="dashboard-heading">
+            <div>
+                <p class="eyebrow">ADMINISTRATOR / OPERATIONS</p>
+                <h1>All shifts</h1>
+                <p>Review every worker shift across the team.</p>
+            </div>
+        </div>
+        <section class="shift-table-wrap">
+            <div class="table-summary">
+                <span>{{ adminShifts.length }} shifts found</span>
+                <span>Team schedule</span>
+            </div>
+            <div class="shift-table admin-shift-table">
+                <div class="table-row table-header">
+                    <span>Worker</span>
+                    <span>Date</span>
+                    <span>Beginning time</span>
+                    <span>End time</span>
+                    <span>Price per hour</span>
+                    <span>Shift place</span>
+                </div>
+                @for (shift of adminShifts; track shift._id) {
+                <div class="table-row table-data admin-row">
+                    <span><strong>{{ shift.userId.firstName }} {{ shift.userId.lastName }}</strong><small>{{
+                            shift.userId.email }}</small></span>
+                    <span>{{ shift.date }}</span>
+                    <span>{{ shift.startTime }}</span>
+                    <span>{{ shift.endTime }}</span>
+                    <span>${{ shift.hourlyWage }}.00</span>
+                    <span>{{ shift.workplace }}</span>
+                </div>
+                }
+                @empty {
+                <p class="empty-state">No worker shifts have been created yet.</p>
+                }
+            </div>
         </section>
     </section>
     } @else {
-    <section class="dashboard-content profile-page">
-        <div class="dashboard-heading"><div><p class="eyebrow">YOUR ACCOUNT / SETTINGS</p><h1>Edit profile</h1><p>Keep your personal details up to date.</p></div></div>
-        <section class="profile-layout">
-            <form class="shift-form" [formGroup]="profileForm" (ngSubmit)="updateProfile()" novalidate>
-                <div class="section-heading"><div><p class="eyebrow">PERSONAL DETAILS</p><h2>Your information</h2></div></div>
-                <div class="field-row"><label>First name<input type="text" formControlName="firstName" autocomplete="given-name" />@if (profileForm.controls.firstName.touched && profileForm.controls.firstName.invalid) {<small>Enter at least 2 characters.</small>}</label><label>Last name<input type="text" formControlName="lastName" autocomplete="family-name" />@if (profileForm.controls.lastName.touched && profileForm.controls.lastName.invalid) {<small>Enter at least 2 characters.</small>}</label></div>
-                <label>Email address<input type="email" formControlName="email" autocomplete="email" />@if (profileForm.controls.email.touched && profileForm.controls.email.invalid) {<small>Enter a valid email address.</small>}</label>
-                <label>Birth date<input type="date" formControlName="birthDate" />@if (profileForm.controls.birthDate.touched && profileForm.controls.birthDate.invalid) {<small>Birth date is required.</small>}</label>
-                <div class="profile-divider"><p class="eyebrow">SECURITY</p><h2>Change password</h2><p>Leave these fields empty to keep your current password.</p></div>
-                <div class="field-row"><label>New password<input type="password" formControlName="password" autocomplete="new-password" placeholder="6+ characters" />@if (profileForm.controls.password.touched && profileForm.controls.password.invalid) {<small>Use at least 6 characters.</small>}</label><label>Confirm new password<input type="password" formControlName="passwordConfirmation" autocomplete="new-password" placeholder="Repeat password" />@if (profilePasswordMismatch) {<small>Passwords must match.</small>}</label></div>
-                @if (successMessage) { <p class="message success">{{ successMessage }}</p> }
-                @if (serverError) { <p class="message error">{{ serverError }}</p> }
-                <div class="form-actions"><button type="button" class="secondary-action" (click)="navigate('home')">Cancel</button><button type="submit" class="primary-action" [disabled]="isSubmitting">{{ isSubmitting ? 'Updating profile...' : 'Update profile' }} <span aria-hidden="true">-&gt;</span></button></div>
-            </form>
-            <aside class="shift-tip"><p class="eyebrow">ACCOUNT CARE</p><h2>Your details, your control.</h2><p>We use your profile information to keep your shifts and account communications accurate.</p><div class="tip-line"><span>01</span><span>Passwords are stored securely.</span></div><div class="tip-line"><span>02</span><span>Your profile changes apply immediately.</span></div></aside>
+    <section class="dashboard-content admin-page">
+        <div class="dashboard-heading">
+            <div>
+                <p class="eyebrow">ADMINISTRATOR / PEOPLE</p>
+                <h1>All workers</h1>
+                <p>Manage worker profiles and keep the team information current.</p>
+            </div>
+        </div>
+        <section class="worker-grid">
+            @for (worker of workers; track worker._id) {
+            <article class="worker-card">
+                <div class="worker-avatar">{{ worker.firstName.charAt(0) }}{{ worker.lastName.charAt(0) }}</div>
+                <div>
+                    <h2>{{ worker.firstName }} {{ worker.lastName }}</h2>
+                    <p>{{ worker.email }}</p>
+                    <small>Birth date: {{ worker.birthDate | date:'MMM d, y' }}</small>
+                </div>
+                <button type="button" class="secondary-action">View profile</button>
+            </article>
+            }
+            @empty {
+            <p class="empty-state">No workers have registered yet.</p>
+            }
         </section>
     </section>
     }
