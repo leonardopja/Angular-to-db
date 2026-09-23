@@ -352,13 +352,18 @@
                     <p>{{ worker.email }}</p>
                     <small>Birth date: {{ worker.birthDate | date:'MMM d, y' }}</small>
                 </div>
-                <button type="button" class="secondary-action" (click)="openWorkerShifts(worker)">View shifts</button>
+                <button type="button" class="secondary-action" (click)="openWorkerEdit(worker)">Edit worker</button><button type="button" class="secondary-action" (click)="openWorkerShifts(worker)">View shifts</button>
             </article>
             }
             @empty {
             <p class="empty-state">No workers have registered yet.</p>
             }
         </section>
+    </section>
+    } @else if (activeView === 'workerEdit') {
+    <section class="dashboard-content admin-page">
+        <div class="dashboard-heading"><div><p class="eyebrow">ADMINISTRATOR / WORKER PROFILE</p><h1>Edit worker</h1><p>Update this worker's details or remove the worker from the team.</p></div><button type="button" class="primary-action" (click)="navigate('workers')">&larr; All workers</button></div>
+        <section class="profile-layout"><form class="shift-form" [formGroup]="profileForm" (ngSubmit)="updateWorker()" novalidate><div class="section-heading"><div><p class="eyebrow">WORKER DETAILS</p><h2>Profile information</h2></div></div><div class="field-row"><label>First name<input type="text" formControlName="firstName" />@if (profileForm.controls.firstName.touched && profileForm.controls.firstName.invalid) {<small>Enter at least 2 characters.</small>}</label><label>Last name<input type="text" formControlName="lastName" />@if (profileForm.controls.lastName.touched && profileForm.controls.lastName.invalid) {<small>Enter at least 2 characters.</small>}</label></div><label>Email address<input type="email" formControlName="email" />@if (profileForm.controls.email.touched && profileForm.controls.email.invalid) {<small>Enter a valid email address.</small>}</label><label>Birth date<input type="date" formControlName="birthDate" />@if (profileForm.controls.birthDate.touched && profileForm.controls.birthDate.invalid) {<small>Birth date is required.</small>}</label><div class="profile-divider"><p class="eyebrow">SECURITY</p><h2>Reset password</h2><p>Leave empty to keep the current password.</p></div><div class="field-row"><label>New password<input type="password" formControlName="password" />@if (profileForm.controls.password.touched && profileForm.controls.password.invalid) {<small>Use at least 6 characters.</small>}</label><label>Confirm password<input type="password" formControlName="passwordConfirmation" />@if (profilePasswordMismatch) {<small>Passwords must match.</small>}</label></div>@if (adminWorkerMessage) {<p class="message success">{{ adminWorkerMessage }}</p>}@if (serverError) {<p class="message error">{{ serverError }}</p>}<div class="form-actions"><button type="button" class="secondary-action danger-action" (click)="deleteWorker()" [disabled]="isSubmitting">Delete worker</button><button type="submit" class="primary-action" [disabled]="isSubmitting">{{ isSubmitting ? 'Updating worker...' : 'Update worker' }} <span aria-hidden="true">-&gt;</span></button></div></form><aside class="shift-tip"><p class="eyebrow">ADMIN CONTROL</p><h2>Keep the team accurate.</h2><p>Changes apply immediately to this worker's account. Deleting a worker also removes their linked shifts.</p></aside></section>
     </section>
     } @else {
     <section class="dashboard-content admin-page">

@@ -192,6 +192,38 @@ app.get('/api/admin/workers/:id/shifts', authenticate, requireAdmin, async (requ
     }
 });
 
+app.put('/api/admin/workers/:id', authenticate, requireAdmin, async (request, response) => {
+    try {
+        const { email, password, passwordConfirmation, firstName, lastName, birthDate } = request.body;
+        if (!email || !firstName || !lastName || !birthDate) {
+            return response.status(400).json({ message: 'Email, name and birth date are required.' });
+        }
+        if (password && (password.length < 6 || password !== passwordConfirmation)) {
+            return response.status(400).json({ message: 'Passwords must match and contain at least 6 characters.' });
+        }
+
+        const updates = { email, firstName, lastName, birthDate };
+        if (password) updates.password = await bcrypt.hash(password, 12);
+        const worker = await User.findOneAndUpdate({ _id: request.params.id, role: 'worker' }, updates, { new: true, runValidators: true }).select('-password');
+        if (!worker) return response.status(404).json({ message: 'Worker was not found.' });
+        return response.json({ message: 'Worker profile was updated successfully.', worker });
+    } catch (error) {
+        if (error.code === 11000) return response.status(409).json({ message: 'An account with this email already exists.' });
+        return response.status(500).json({ message: 'Unable to update the worker.' });
+    }
+});
+
+app.delete('/api/admin/workers/:id', authenticate, requireAdmin, async (request, response) => {
+    try {
+        const worker = await User.findOneAndDelete({ _id: request.params.id, role: 'worker' });
+        if (!worker) return response.status(404).json({ message: 'Worker was not found.' });
+        await Shift.deleteMany({ userId: request.params.id });
+        return response.json({ message: 'Worker and linked shifts were deleted successfully.' });
+    } catch (_error) {
+        return response.status(500).json({ message: 'Unable to delete the worker.' });
+    }
+});
+
 const start = async () => {
     if (process.env.MONGODB_URI) {
         await mongoose.connect(process.env.MONGODB_URI);

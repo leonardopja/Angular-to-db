@@ -612,7 +612,7 @@ button:disabled {
 
 .worker-card {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto 1fr auto auto;
     align-items: center;
     gap: 1rem;
     background: #fff;
@@ -649,6 +649,9 @@ button:disabled {
     width: auto;
     padding: .6rem .8rem;
 }
+
+.danger-action { background: #fde7e2; color: #a53a28; }
+.danger-action:hover { background: #f8cbc1; }
 
 .add-shift-layout {
     display: grid;

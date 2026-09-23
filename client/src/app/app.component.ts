@@ -24,11 +24,13 @@ export class AppComponent {
     serverError = '';
     activeMode: 'register' | 'login' = 'register';
     loggedInUser = '';
-    activeView: 'home' | 'shifts' | 'add' | 'edit' | 'profile' | 'adminShifts' | 'workers' | 'workerShifts' = 'home';
+    activeView: 'home' | 'shifts' | 'add' | 'edit' | 'profile' | 'adminShifts' | 'workers' | 'workerShifts' | 'workerEdit' = 'home';
     isAdministrator = false;
     adminShifts: AdminShift[] = [];
     workers: Worker[] = [];
     selectedWorker: Worker | null = null;
+    selectedWorkerId = '';
+    adminWorkerMessage = '';
     workerShifts: AdminShift[] = [];
     adminWorkerFilter = '';
     adminPlaceFilter = '';
@@ -93,7 +95,7 @@ export class AppComponent {
         this.serverError = '';
     }
 
-    navigate(view: 'home' | 'shifts' | 'add' | 'edit' | 'profile' | 'adminShifts' | 'workers' | 'workerShifts'): void {
+    navigate(view: 'home' | 'shifts' | 'add' | 'edit' | 'profile' | 'adminShifts' | 'workers' | 'workerShifts' | 'workerEdit'): void {
         this.activeView = view;
         this.addShiftMessage = '';
         this.serverError = '';
@@ -119,6 +121,52 @@ export class AppComponent {
         this.http.get<AdminShift[]>(`http://localhost:3000/api/admin/workers/${worker._id}/shifts`, { headers: this.authHeaders() }).subscribe({
             next: (shifts) => this.workerShifts = shifts,
             error: (error) => this.serverError = error.error?.message || 'Unable to load this worker shifts.'
+        });
+    }
+
+    openWorkerEdit(worker: Worker): void {
+        this.selectedWorker = worker;
+        this.selectedWorkerId = worker._id;
+        this.adminWorkerMessage = '';
+        this.profileForm.patchValue({ email: worker.email, firstName: worker.firstName, lastName: worker.lastName, birthDate: worker.birthDate, password: '', passwordConfirmation: '' });
+        this.activeView = 'workerEdit';
+    }
+
+    updateWorker(): void {
+        this.adminWorkerMessage = '';
+        this.serverError = '';
+        this.profileForm.markAllAsTouched();
+        if (this.profileForm.invalid || this.profilePasswordMismatch || !this.selectedWorkerId) return;
+
+        this.isSubmitting = true;
+        this.http.put<{ message: string; worker: Worker }>(`http://localhost:3000/api/admin/workers/${this.selectedWorkerId}`, this.profileForm.getRawValue(), { headers: this.authHeaders() }).subscribe({
+            next: (response) => {
+                this.selectedWorker = response.worker;
+                this.adminWorkerMessage = response.message;
+                this.profileForm.patchValue({ password: '', passwordConfirmation: '' });
+                this.isSubmitting = false;
+                this.loadWorkers();
+            },
+            error: (error) => {
+                this.serverError = error.error?.message || 'Unable to update the worker.';
+                this.isSubmitting = false;
+            }
+        });
+    }
+
+    deleteWorker(): void {
+        if (!this.selectedWorkerId || !window.confirm('Delete this worker and all linked shifts?')) return;
+        this.isSubmitting = true;
+        this.http.delete<{ message: string }>(`http://localhost:3000/api/admin/workers/${this.selectedWorkerId}`, { headers: this.authHeaders() }).subscribe({
+            next: (response) => {
+                this.adminWorkerMessage = response.message;
+                this.isSubmitting = false;
+                this.navigate('workers');
+            },
+            error: (error) => {
+                this.serverError = error.error?.message || 'Unable to delete the worker.';
+                this.isSubmitting = false;
+            }
         });
     }
 
