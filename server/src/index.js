@@ -174,6 +174,31 @@ app.get('/api/admin/shifts', authenticate, requireAdmin, async (request, respons
     }
 });
 
+app.get('/api/admin/summary', authenticate, requireAdmin, async (request, response) => {
+    try {
+        const [workers, shifts] = await Promise.all([
+            User.find({ role: 'worker' }).select('_id firstName lastName'),
+            Shift.find().populate('userId', 'firstName lastName')
+        ]);
+        const shiftCounts = new Map();
+        shifts.forEach((shift) => {
+            const workerId = shift.userId?._id.toString();
+            if (workerId) shiftCounts.set(workerId, (shiftCounts.get(workerId) || 0) + 1);
+        });
+        const workerOfMonth = workers.reduce((leader, worker) => {
+            const currentCount = shiftCounts.get(worker._id.toString()) || 0;
+            return currentCount > leader.shiftCount ? { name: `${worker.firstName} ${worker.lastName}`, shiftCount: currentCount } : leader;
+        }, { name: 'No data yet', shiftCount: 0 });
+        const earnings = shifts.reduce((total, shift) => {
+            const hours = Math.max(0, (Number(shift.endTime.split(':')[0]) || 0) - (Number(shift.startTime.split(':')[0]) || 0));
+            return total + hours * shift.hourlyWage;
+        }, 0);
+        return response.json({ workerCount: workers.length, shiftCount: shifts.length, workerOfMonth, monthlyEarnings: earnings });
+    } catch (_error) {
+        return response.status(500).json({ message: 'Unable to load administrator summary.' });
+    }
+});
+
 app.get('/api/admin/workers', authenticate, requireAdmin, async (request, response) => {
     try {
         const workers = await User.find({ role: 'worker' }).select('-password').sort({ lastName: 1, firstName: 1 });
@@ -210,6 +235,18 @@ app.put('/api/admin/workers/:id', authenticate, requireAdmin, async (request, re
     } catch (error) {
         if (error.code === 11000) return response.status(409).json({ message: 'An account with this email already exists.' });
         return response.status(500).json({ message: 'Unable to update the worker.' });
+    }
+});
+
+app.patch('/api/admin/workers/:id/role', authenticate, requireAdmin, async (request, response) => {
+    try {
+        const { role } = request.body;
+        if (!['worker', 'admin'].includes(role)) return response.status(400).json({ message: 'Invalid worker role.' });
+        const worker = await User.findOneAndUpdate({ _id: request.params.id, role: 'worker' }, { role }, { new: true }).select('-password');
+        if (!worker) return response.status(404).json({ message: 'Worker was not found.' });
+        return response.json({ message: role === 'admin' ? 'Worker promoted to administrator.' : 'Administrator role removed.', worker });
+    } catch (_error) {
+        return response.status(500).json({ message: 'Unable to update the worker role.' });
     }
 });
 

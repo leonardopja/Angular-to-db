@@ -612,7 +612,7 @@ button:disabled {
 
 .worker-card {
     display: grid;
-    grid-template-columns: auto 1fr auto auto;
+    grid-template-columns: auto 1fr repeat(3, auto);
     align-items: center;
     gap: 1rem;
     background: #fff;
@@ -652,6 +652,10 @@ button:disabled {
 
 .danger-action { background: #fde7e2; color: #a53a28; }
 .danger-action:hover { background: #f8cbc1; }
+
+.admin-highlight { display: flex; align-items: center; justify-content: space-between; gap: 2rem; background: #102a43; border-radius: 6px; color: #fff; padding: 2rem; }
+.admin-highlight h2 { color: #fff; font-size: 1.8rem; }
+.admin-highlight p:last-child { color: #b3c9d9; margin: .5rem 0 0; }
 
 .add-shift-layout {
     display: grid;

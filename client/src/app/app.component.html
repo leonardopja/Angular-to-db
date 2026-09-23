@@ -75,8 +75,8 @@
 <main class="dashboard-shell">
     <header class="topbar">
         <a class="brand" href="#home" aria-label="Shiftwork home">SHIFT<span>WORK</span></a>
-        <nav aria-label="Main navigation"><button type="button" [class.active]="activeView === 'home'"
-                (click)="navigate('home')">Home</button><button type="button" [class.active]="activeView === 'shifts'"
+        <nav aria-label="Main navigation"><button type="button" [class.active]="activeView === (isAdministrator ? 'adminHome' : 'home')"
+            (click)="navigate(isAdministrator ? 'adminHome' : 'home')">Home</button><button type="button" [class.active]="activeView === 'shifts'"
                 (click)="navigate('shifts')">My shifts</button><button type="button"
                 [class.active]="activeView === 'add'" (click)="navigate('add')">Add a
                 shift</button><button type="button" [class.active]="activeView === 'profile'"
@@ -92,7 +92,13 @@
         <div class="user-actions"><span>Hello, {{ loggedInUser }}</span><button type="button" class="logout-button"
                 (click)="logout()">Log out</button></div>
     </header>
-    @if (activeView === 'home') {
+    @if (isAdministrator && activeView === 'adminHome') {
+    <section class="dashboard-content admin-page">
+        <div class="dashboard-heading"><div><p class="eyebrow">ADMINISTRATOR / OVERVIEW</p><h1>Team overview</h1><p>Keep an eye on workers, shifts and team earnings.</p></div></div>
+        <div class="stats-grid"><article class="stat-card"><span class="stat-label">Total workers</span><strong>{{ adminSummary.workerCount }}</strong><small>Active worker profiles</small></article><article class="stat-card accent-card"><span class="stat-label">Total shifts</span><strong>{{ adminSummary.shiftCount }}</strong><small>Across the whole team</small></article><article class="stat-card"><span class="stat-label">Monthly earnings</span><strong>${{ adminSummary.monthlyEarnings | number:'1.2-2' }}</strong><small>Based on recorded shifts</small></article></div>
+        <div class="admin-highlight"><div><p class="eyebrow">WORKER OF THE MONTH</p><h2>{{ adminSummary.workerOfMonth.name }}</h2><p>{{ adminSummary.workerOfMonth.shiftCount }} shifts recorded this period.</p></div><button type="button" class="primary-action" (click)="navigate('workers')">View all workers &rarr;</button></div>
+    </section>
+    } @else if (activeView === 'home') {
     <section class="dashboard-content">
         <div class="dashboard-heading">
             <div>
@@ -352,7 +358,7 @@
                     <p>{{ worker.email }}</p>
                     <small>Birth date: {{ worker.birthDate | date:'MMM d, y' }}</small>
                 </div>
-                <button type="button" class="secondary-action" (click)="openWorkerEdit(worker)">Edit worker</button><button type="button" class="secondary-action" (click)="openWorkerShifts(worker)">View shifts</button>
+                <button type="button" class="secondary-action" (click)="openWorkerEdit(worker)">Edit worker</button><button type="button" class="secondary-action" (click)="openWorkerShifts(worker)">View shifts</button><button type="button" class="secondary-action" (click)="promoteWorker(worker)">Make administrator</button>
             </article>
             }
             @empty {

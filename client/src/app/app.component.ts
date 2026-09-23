@@ -9,6 +9,7 @@ type Shift = { id?: string; date: string; day: string; month: string; start: str
 type ApiShift = { _id: string; date: string; startTime: string; endTime: string; hourlyWage: number; workplace: string; shiftName: string; comments?: string };
 type AdminShift = ApiShift & { userId: { firstName: string; lastName: string; email: string } };
 type Worker = { _id: string; firstName: string; lastName: string; email: string; birthDate: string };
+type AdminSummary = { workerCount: number; shiftCount: number; workerOfMonth: { name: string; shiftCount: number }; monthlyEarnings: number };
 
 @Component({
     selector: 'app-root',
@@ -24,10 +25,11 @@ export class AppComponent {
     serverError = '';
     activeMode: 'register' | 'login' = 'register';
     loggedInUser = '';
-    activeView: 'home' | 'shifts' | 'add' | 'edit' | 'profile' | 'adminShifts' | 'workers' | 'workerShifts' | 'workerEdit' = 'home';
+    activeView: 'home' | 'shifts' | 'add' | 'edit' | 'profile' | 'adminHome' | 'adminShifts' | 'workers' | 'workerShifts' | 'workerEdit' = 'home';
     isAdministrator = false;
     adminShifts: AdminShift[] = [];
     workers: Worker[] = [];
+    adminSummary: AdminSummary = { workerCount: 0, shiftCount: 0, workerOfMonth: { name: 'No data yet', shiftCount: 0 }, monthlyEarnings: 0 };
     selectedWorker: Worker | null = null;
     selectedWorkerId = '';
     adminWorkerMessage = '';
@@ -95,13 +97,14 @@ export class AppComponent {
         this.serverError = '';
     }
 
-    navigate(view: 'home' | 'shifts' | 'add' | 'edit' | 'profile' | 'adminShifts' | 'workers' | 'workerShifts' | 'workerEdit'): void {
+    navigate(view: 'home' | 'shifts' | 'add' | 'edit' | 'profile' | 'adminHome' | 'adminShifts' | 'workers' | 'workerShifts' | 'workerEdit'): void {
         this.activeView = view;
         this.addShiftMessage = '';
         this.serverError = '';
         if (view === 'profile') this.loadProfile();
         if (view === 'adminShifts') this.loadAdminShifts();
         if (view === 'workers') this.loadWorkers();
+        if (view === 'adminHome') this.loadAdminSummary();
     }
 
     get filteredAdminShifts(): AdminShift[] {
@@ -167,6 +170,16 @@ export class AppComponent {
                 this.serverError = error.error?.message || 'Unable to delete the worker.';
                 this.isSubmitting = false;
             }
+        });
+    }
+
+    promoteWorker(worker: Worker): void {
+        this.http.patch<{ message: string; worker: Worker }>(`http://localhost:3000/api/admin/workers/${worker._id}/role`, { role: 'admin' }, { headers: this.authHeaders() }).subscribe({
+            next: (response) => {
+                this.adminWorkerMessage = response.message;
+                this.workers = this.workers.filter((item) => item._id !== worker._id);
+            },
+            error: (error) => this.serverError = error.error?.message || 'Unable to promote the worker.'
         });
     }
 
@@ -275,8 +288,8 @@ export class AppComponent {
                 this.profileForm.patchValue(response.user);
                 this.isSubmitting = false;
                 if (this.isAdministrator) {
-                    this.activeView = 'adminShifts';
-                    this.loadAdminShifts();
+                    this.activeView = 'adminHome';
+                    this.loadAdminSummary();
                 } else {
                     this.loadShifts();
                 }
@@ -306,6 +319,13 @@ export class AppComponent {
         this.http.get<AdminShift[]>('http://localhost:3000/api/admin/shifts', { headers: this.authHeaders() }).subscribe({
             next: (shifts) => this.adminShifts = shifts,
             error: (error) => this.serverError = error.error?.message || 'Unable to load all shifts.'
+        });
+    }
+
+    private loadAdminSummary(): void {
+        this.http.get<AdminSummary>('http://localhost:3000/api/admin/summary', { headers: this.authHeaders() }).subscribe({
+            next: (summary) => this.adminSummary = summary,
+            error: (error) => this.serverError = error.error?.message || 'Unable to load administrator summary.'
         });
     }
 
