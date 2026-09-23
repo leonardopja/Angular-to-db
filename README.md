@@ -2,20 +2,49 @@
 
 Full-stack shift management application built for the Wawiwa Project 2 specification. The application lets workers create an account, sign in, manage their profile, create and edit shifts, filter their schedule and recover a forgotten password. Administrators can review team shifts, inspect worker profiles, update or delete workers, promote workers to administrators and view team statistics.
 
+## Learning project
+
+This is an educational project created to practice full-stack web development. It demonstrates how an Angular frontend communicates with a Node.js REST API, how authentication protects user data and how application records are stored in MongoDB Atlas. It is intended for study and portfolio development, not as a production-ready system.
+
+The project also exercises common team application concepts: role-based access, form validation, CRUD operations, responsive interfaces, password security and separated frontend/backend responsibilities.
+
 ## Technology
 
-- Angular client in `client/`
-- Node.js and Express REST API in `server/`
-- MongoDB Atlas with Mongoose
+- Angular 19 with standalone components
+- Angular Reactive Forms and `HttpClient`
+- TypeScript and SCSS for the client interface
+- Node.js with Express for the REST API
+- MongoDB Atlas as the cloud database
+- Mongoose for schemas and database operations
 - JWT authentication with 60-minute sessions
-- Bcrypt password hashing
+- Bcryptjs password hashing
+- Git and GitHub for version control and milestone history
 
 ## Project structure
 
 ```text
-client/   Angular application and responsive UI
-server/   Express API, authentication and MongoDB models
+Angular-to-db/
+|-- client/
+|   |-- src/app/           Angular component, forms and application views
+|   |-- src/styles.scss    Global visual styles
+|   |-- angular.json       Angular build and budget configuration
+|   `-- package.json       Frontend dependencies and scripts
+|-- server/
+|   |-- src/index.js       Express server, routes and Mongoose models
+|   |-- .env.example       Environment variable template
+|   `-- package.json       Backend dependencies and scripts
+|-- .gitignore              Excludes dependencies, builds and secrets
+|-- README.md               Project documentation
+`-- package-lock.json       Root dependency lock file
 ```
+
+### Frontend responsibilities
+
+The Angular application renders the registration, login, password recovery, worker dashboard, shift management and administrator screens. It validates user input, stores the login token locally and calls the REST API through `HttpClient`.
+
+### Backend responsibilities
+
+The Express server exposes authentication, profile, shift and administrator endpoints. It validates requests, hashes passwords, verifies JWT tokens, enforces worker/admin permissions and reads or writes records in MongoDB Atlas.
 
 ## Local setup
 
