@@ -87,4 +87,12 @@ export class AppComponent {
             }
         });
     }
+
+    logout(): void {
+        localStorage.removeItem('shiftwork_token');
+        this.loggedInUser = '';
+        this.activeMode = 'login';
+        this.successMessage = '';
+        this.serverError = '';
+    }
 }

@@ -1,3 +1,4 @@
+@if (!loggedInUser) {
 <main class="page-shell">
     <section class="intro-panel">
         <p class="eyebrow">SHIFTWORK / TEAM PORTAL</p>
@@ -70,3 +71,67 @@
         }
     </section>
 </main>
+} @else {
+<main class="dashboard-shell">
+    <header class="topbar">
+        <a class="brand" href="#home" aria-label="Shiftwork home">SHIFT<span>WORK</span></a>
+        <nav aria-label="Main navigation"><a class="active" href="#home">My shifts</a><a href="#add-shift">Add a
+                shift</a><a href="#profile">Edit profile</a></nav>
+        <div class="user-actions"><span>Hello, {{ loggedInUser }}</span><button type="button" class="logout-button"
+                (click)="logout()">Log out</button></div>
+    </header>
+    <section class="dashboard-content">
+        <div class="dashboard-heading">
+            <div>
+                <p class="eyebrow">YOUR WORKDAY / OVERVIEW</p>
+                <h1>Good morning, {{ loggedInUser }}.</h1>
+                <p>Here is what is happening with your shifts this week.</p>
+            </div><button type="button" class="primary-action">+ Add a shift</button>
+        </div>
+        <div class="stats-grid">
+            <article class="stat-card"><span class="stat-label">Upcoming shifts</span><strong>04</strong><small>Next 30
+                    days</small></article>
+            <article class="stat-card accent-card"><span class="stat-label">Hours this
+                    month</span><strong>28.5</strong><small>+12% from last month</small></article>
+            <article class="stat-card"><span class="stat-label">Monthly
+                    earnings</span><strong>$684</strong><small>Estimated total</small></article>
+        </div>
+        <div class="dashboard-grid">
+            <section class="dashboard-section">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">YOUR CALENDAR</p>
+                        <h2>Upcoming shift</h2>
+                    </div><a href="#shifts">View all shifts &rarr;</a>
+                </div>
+                <article class="shift-card">
+                    <div class="date-badge"><strong>24</strong><span>JUN</span></div>
+                    <div class="shift-details"><strong>Morning service shift</strong><span>Northside Cafe &middot; 08:00
+                            - 14:00</span></div><span class="shift-price">$96.00</span>
+                </article>
+                <div class="section-heading past-heading">
+                    <div>
+                        <p class="eyebrow">RECENT ACTIVITY</p>
+                        <h2>Past shifts</h2>
+                    </div>
+                </div>
+                <article class="past-shift">
+                    <div><strong>Evening floor shift</strong><span>Harbor House &middot; June 18</span></div>
+                    <strong>$112.00</strong>
+                </article>
+            </section>
+            <aside class="earnings-panel">
+                <p class="eyebrow">EARNINGS SNAPSHOT</p>
+                <h2>June earnings</h2>
+                <div class="earnings-total">$684.00</div>
+                <div class="bar-chart"><span style="height: 42%"></span><span style="height: 64%"></span><span
+                        style="height: 51%"></span><span style="height: 78%"></span><span
+                        style="height: 60%"></span><span style="height: 92%"></span><span style="height: 74%"></span>
+                </div>
+                <div class="chart-labels"><span>W1</span><span>W2</span><span>W3</span><span>W4</span></div>
+                <p class="panel-note">Your highest-earning week was last week.</p>
+            </aside>
+        </div>
+    </section>
+</main>
+}
