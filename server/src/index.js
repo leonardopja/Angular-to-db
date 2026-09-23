@@ -183,6 +183,15 @@ app.get('/api/admin/workers', authenticate, requireAdmin, async (request, respon
     }
 });
 
+app.get('/api/admin/workers/:id/shifts', authenticate, requireAdmin, async (request, response) => {
+    try {
+        const shifts = await Shift.find({ userId: request.params.id }).populate('userId', 'firstName lastName email').sort({ date: 1, startTime: 1 });
+        return response.json(shifts);
+    } catch (_error) {
+        return response.status(500).json({ message: 'Unable to load this worker shifts.' });
+    }
+});
+
 const start = async () => {
     if (process.env.MONGODB_URI) {
         await mongoose.connect(process.env.MONGODB_URI);

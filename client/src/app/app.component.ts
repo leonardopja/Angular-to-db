@@ -24,10 +24,15 @@ export class AppComponent {
     serverError = '';
     activeMode: 'register' | 'login' = 'register';
     loggedInUser = '';
-    activeView: 'home' | 'shifts' | 'add' | 'edit' | 'profile' | 'adminShifts' | 'workers' = 'home';
+    activeView: 'home' | 'shifts' | 'add' | 'edit' | 'profile' | 'adminShifts' | 'workers' | 'workerShifts' = 'home';
     isAdministrator = false;
     adminShifts: AdminShift[] = [];
     workers: Worker[] = [];
+    selectedWorker: Worker | null = null;
+    workerShifts: AdminShift[] = [];
+    adminWorkerFilter = '';
+    adminPlaceFilter = '';
+    adminFromDate = '';
     shiftPlaceFilter = '';
     shiftDateFilter = '';
     addShiftMessage = '';
@@ -88,13 +93,33 @@ export class AppComponent {
         this.serverError = '';
     }
 
-    navigate(view: 'home' | 'shifts' | 'add' | 'edit' | 'profile' | 'adminShifts' | 'workers'): void {
+    navigate(view: 'home' | 'shifts' | 'add' | 'edit' | 'profile' | 'adminShifts' | 'workers' | 'workerShifts'): void {
         this.activeView = view;
         this.addShiftMessage = '';
         this.serverError = '';
         if (view === 'profile') this.loadProfile();
         if (view === 'adminShifts') this.loadAdminShifts();
         if (view === 'workers') this.loadWorkers();
+    }
+
+    get filteredAdminShifts(): AdminShift[] {
+        return this.adminShifts.filter((shift) => {
+            const fullName = `${shift.userId.firstName} ${shift.userId.lastName}`.toLowerCase();
+            const matchesWorker = !this.adminWorkerFilter || fullName.includes(this.adminWorkerFilter.toLowerCase());
+            const matchesPlace = !this.adminPlaceFilter || shift.workplace === this.adminPlaceFilter;
+            const matchesDate = !this.adminFromDate || shift.date >= this.adminFromDate;
+            return matchesWorker && matchesPlace && matchesDate;
+        });
+    }
+
+    openWorkerShifts(worker: Worker): void {
+        this.selectedWorker = worker;
+        this.activeView = 'workerShifts';
+        this.serverError = '';
+        this.http.get<AdminShift[]>(`http://localhost:3000/api/admin/workers/${worker._id}/shifts`, { headers: this.authHeaders() }).subscribe({
+            next: (shifts) => this.workerShifts = shifts,
+            error: (error) => this.serverError = error.error?.message || 'Unable to load this worker shifts.'
+        });
     }
 
     openEditShift(shift: Shift): void {

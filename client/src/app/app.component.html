@@ -302,9 +302,10 @@
                 <p>Review every worker shift across the team.</p>
             </div>
         </div>
+        <section class="filter-bar admin-filter-bar" aria-label="Administrator shift filters"><label>Worker name<input type="search" [(ngModel)]="adminWorkerFilter" placeholder="Search worker" /></label><label>Shift place<select [(ngModel)]="adminPlaceFilter"><option value="">All places</option><option value="Northside Cafe">Northside Cafe</option><option value="Harbor House">Harbor House</option><option value="The Green Room">The Green Room</option></select></label><label>From date<input type="date" [(ngModel)]="adminFromDate" /></label><button type="button" class="clear-filter" (click)="adminWorkerFilter = ''; adminPlaceFilter = ''; adminFromDate = ''">Clear filters</button></section>
         <section class="shift-table-wrap">
             <div class="table-summary">
-                <span>{{ adminShifts.length }} shifts found</span>
+            <span>{{ filteredAdminShifts.length }} shifts found</span>
                 <span>Team schedule</span>
             </div>
             <div class="shift-table admin-shift-table">
@@ -316,7 +317,7 @@
                     <span>Price per hour</span>
                     <span>Shift place</span>
                 </div>
-                @for (shift of adminShifts; track shift._id) {
+                @for (shift of filteredAdminShifts; track shift._id) {
                 <div class="table-row table-data admin-row">
                     <span><strong>{{ shift.userId.firstName }} {{ shift.userId.lastName }}</strong><small>{{
                             shift.userId.email }}</small></span>
@@ -333,7 +334,7 @@
             </div>
         </section>
     </section>
-    } @else {
+    } @else if (activeView === 'workers') {
     <section class="dashboard-content admin-page">
         <div class="dashboard-heading">
             <div>
@@ -351,13 +352,18 @@
                     <p>{{ worker.email }}</p>
                     <small>Birth date: {{ worker.birthDate | date:'MMM d, y' }}</small>
                 </div>
-                <button type="button" class="secondary-action">View profile</button>
+                <button type="button" class="secondary-action" (click)="openWorkerShifts(worker)">View shifts</button>
             </article>
             }
             @empty {
             <p class="empty-state">No workers have registered yet.</p>
             }
         </section>
+    </section>
+    } @else {
+    <section class="dashboard-content admin-page">
+        <div class="dashboard-heading"><div><p class="eyebrow">ADMINISTRATOR / WORKER DETAIL</p><h1>{{ selectedWorker?.firstName }}'s shifts</h1><p>Review all shifts assigned to {{ selectedWorker?.firstName }} {{ selectedWorker?.lastName }}.</p></div><button type="button" class="primary-action" (click)="navigate('workers')">&larr; All workers</button></div>
+        <section class="shift-table-wrap"><div class="table-summary"><span>{{ workerShifts.length }} shifts found</span><span>{{ selectedWorker?.email }}</span></div><div class="shift-table admin-shift-table"><div class="table-row table-header"><span>Worker</span><span>Date</span><span>Beginning time</span><span>End time</span><span>Price per hour</span><span>Shift place</span></div>@for (shift of workerShifts; track shift._id) {<div class="table-row table-data admin-row"><span>{{ shift.shiftName }}</span><span>{{ shift.date }}</span><span>{{ shift.startTime }}</span><span>{{ shift.endTime }}</span><span>${{ shift.hourlyWage }}.00</span><span>{{ shift.workplace }}</span></div>} @empty {<p class="empty-state">No shifts found for this worker.</p>}</div></section>
     </section>
     }
 </main>
