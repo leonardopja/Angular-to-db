@@ -23,7 +23,7 @@ export class AppComponent {
     isSubmitting = false;
     successMessage = '';
     serverError = '';
-    activeMode: 'register' | 'login' = 'register';
+    activeMode: 'register' | 'login' | 'forgot' | 'reset' = 'register';
     loggedInUser = '';
     activeView: 'home' | 'shifts' | 'add' | 'edit' | 'profile' | 'adminHome' | 'adminShifts' | 'workers' | 'workerShifts' | 'workerEdit' = 'home';
     isAdministrator = false;
@@ -33,6 +33,7 @@ export class AppComponent {
     selectedWorker: Worker | null = null;
     selectedWorkerId = '';
     adminWorkerMessage = '';
+    resetToken = '';
     workerShifts: AdminShift[] = [];
     adminWorkerFilter = '';
     adminPlaceFilter = '';
@@ -64,6 +65,9 @@ export class AppComponent {
         password: ['', [Validators.required, Validators.minLength(6)]]
     });
 
+    readonly forgotPasswordForm = this.formBuilder.nonNullable.group({ email: ['', [Validators.required, Validators.email]] });
+    readonly resetPasswordForm = this.formBuilder.nonNullable.group({ password: ['', [Validators.required, Validators.minLength(6)]], passwordConfirmation: ['', Validators.required] });
+
     readonly addShiftForm = this.formBuilder.nonNullable.group({
         date: ['', Validators.required],
         startTime: ['', Validators.required],
@@ -91,10 +95,44 @@ export class AppComponent {
         });
     }
 
-    switchMode(mode: 'register' | 'login'): void {
+    switchMode(mode: 'register' | 'login' | 'forgot' | 'reset'): void {
         this.activeMode = mode;
         this.successMessage = '';
         this.serverError = '';
+    }
+
+    get resetPasswordMismatch(): boolean {
+        const { password, passwordConfirmation } = this.resetPasswordForm.controls;
+        return passwordConfirmation.touched && password.value !== passwordConfirmation.value;
+    }
+
+    requestPasswordReset(): void {
+        this.successMessage = '';
+        this.serverError = '';
+        this.forgotPasswordForm.markAllAsTouched();
+        if (this.forgotPasswordForm.invalid) return;
+        this.isSubmitting = true;
+        this.http.post<{ message: string; resetToken?: string }>('http://localhost:3000/api/auth/forgot-password', this.forgotPasswordForm.getRawValue()).subscribe({
+            next: (response) => {
+                this.resetToken = response.resetToken || '';
+                this.successMessage = response.message;
+                this.isSubmitting = false;
+                if (this.resetToken) this.activeMode = 'reset';
+            },
+            error: (error) => { this.serverError = error.error?.message || 'Unable to request a password reset.'; this.isSubmitting = false; }
+        });
+    }
+
+    resetPassword(): void {
+        this.successMessage = '';
+        this.serverError = '';
+        this.resetPasswordForm.markAllAsTouched();
+        if (this.resetPasswordForm.invalid || this.resetPasswordMismatch || !this.resetToken) return;
+        this.isSubmitting = true;
+        this.http.post<{ message: string }>('http://localhost:3000/api/auth/reset-password', { token: this.resetToken, ...this.resetPasswordForm.getRawValue() }).subscribe({
+            next: (response) => { this.successMessage = response.message; this.isSubmitting = false; this.resetPasswordForm.reset(); this.activeMode = 'login'; },
+            error: (error) => { this.serverError = error.error?.message || 'Unable to reset the password.'; this.isSubmitting = false; }
+        });
     }
 
     navigate(view: 'home' | 'shifts' | 'add' | 'edit' | 'profile' | 'adminHome' | 'adminShifts' | 'workers' | 'workerShifts' | 'workerEdit'): void {

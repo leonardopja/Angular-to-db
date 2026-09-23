@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -19,7 +20,9 @@ const userSchema = new mongoose.Schema({
     firstName: { type: String, required: true, minlength: 2, trim: true },
     lastName: { type: String, required: true, minlength: 2, trim: true },
     birthDate: { type: Date, required: true },
-    role: { type: String, enum: ['worker', 'admin'], default: 'worker' }
+    role: { type: String, enum: ['worker', 'admin'], default: 'worker' },
+    resetTokenHash: { type: String },
+    resetTokenExpires: { type: Date }
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);
@@ -91,6 +94,41 @@ app.post('/api/auth/login', async (request, response) => {
         return response.json({ token, expiresIn: 3600, user: { firstName: user.firstName, lastName: user.lastName, email: user.email, birthDate: user.birthDate, role: user.role } });
     } catch (_error) {
         return response.status(500).json({ message: 'Unable to sign in.' });
+    }
+});
+
+app.post('/api/auth/forgot-password', async (request, response) => {
+    try {
+        const email = request.body.email?.toLowerCase().trim();
+        const user = email ? await User.findOne({ email }) : null;
+        if (!user) return response.json({ message: 'If an account exists, a password reset link has been created.' });
+
+        const resetToken = randomBytes(32).toString('hex');
+        user.resetTokenHash = createHash('sha256').update(resetToken).digest('hex');
+        user.resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000);
+        await user.save();
+        return response.json({ message: 'Your password reset link is valid for 60 minutes.', resetToken });
+    } catch (_error) {
+        return response.status(500).json({ message: 'Unable to create a password reset request.' });
+    }
+});
+
+app.post('/api/auth/reset-password', async (request, response) => {
+    try {
+        const { token, password, passwordConfirmation } = request.body;
+        if (!token || !password || password !== passwordConfirmation || password.length < 6) {
+            return response.status(400).json({ message: 'Use a matching password with at least 6 characters.' });
+        }
+        const resetTokenHash = createHash('sha256').update(token).digest('hex');
+        const user = await User.findOne({ resetTokenHash, resetTokenExpires: { $gt: new Date() } });
+        if (!user) return response.status(400).json({ message: 'This reset link is invalid or has expired.' });
+        user.password = await bcrypt.hash(password, 12);
+        user.resetTokenHash = undefined;
+        user.resetTokenExpires = undefined;
+        await user.save();
+        return response.json({ message: 'Your password was reset successfully.' });
+    } catch (_error) {
+        return response.status(500).json({ message: 'Unable to reset the password.' });
     }
 });
 

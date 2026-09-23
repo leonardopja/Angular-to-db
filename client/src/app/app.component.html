@@ -10,14 +10,17 @@
     </section>
     <section class="form-panel" aria-labelledby="registration-title">
         <div class="form-heading">
-            <p class="eyebrow">{{ activeMode === 'register' ? 'WELCOME ABOARD' : 'WELCOME BACK' }}</p>
-            <h2 id="registration-title">{{ activeMode === 'register' ? 'Create your account' : 'Sign in to Shiftwork' }}
+            <p class="eyebrow">{{ activeMode === 'register' ? 'WELCOME ABOARD' : activeMode === 'login' ? 'WELCOME BACK'
+                : 'ACCOUNT RECOVERY' }}</p>
+            <h2 id="registration-title">{{ activeMode === 'register' ? 'Create your account' : activeMode === 'login' ?
+                'Sign in to Shiftwork' : activeMode === 'forgot' ? 'Reset your password' : 'Choose a new password' }}
             </h2>
             <p>
-                {{ activeMode === 'register' ? 'Already registered?' : 'New to Shiftwork?' }}
+                {{ activeMode === 'register' ? 'Already registered?' : activeMode === 'login' ? 'New to Shiftwork?' :
+                'Remember your password?' }}
                 <button class="mode-link" type="button"
                     (click)="switchMode(activeMode === 'register' ? 'login' : 'register')">
-                    {{ activeMode === 'register' ? 'Sign in' : 'Create an account' }}
+                    {{ activeMode === 'register' ? 'Sign in' : 'Back to registration' }}
                 </button>
             </p>
         </div>
@@ -54,7 +57,7 @@
             <button type="submit" [disabled]="isSubmitting">{{ isSubmitting ? 'Creating account...' : 'Create account'
                 }} <span aria-hidden="true">-&gt;</span></button>
         </form>
-        } @else {
+        } @else if (activeMode === 'login') {
         <form [formGroup]="loginForm" (ngSubmit)="submitLogin()" novalidate>
             <label>Email address<input type="email" formControlName="email" autocomplete="email"
                     placeholder="you@example.com" />@if (loginForm.controls.email.touched &&
@@ -63,11 +66,32 @@
                     placeholder="Your password" />@if (loginForm.controls.password.touched &&
                 loginForm.controls.password.invalid) {<small>Password must contain at least 6
                     characters.</small>}</label>
+            <button type="button" class="mode-link forgot-link" (click)="switchMode('forgot')">Forgot password?</button>
             @if (successMessage) { <p class="message success">{{ successMessage }}</p> }
             @if (serverError) { <p class="message error">{{ serverError }}</p> }
             <button type="submit" [disabled]="isSubmitting">{{ isSubmitting ? 'Signing in...' : 'Sign in' }} <span
                     aria-hidden="true">-&gt;</span></button>
         </form>
+        } @else if (activeMode === 'forgot') {
+        <form [formGroup]="forgotPasswordForm" (ngSubmit)="requestPasswordReset()" novalidate><label>Email address<input
+                    type="email" formControlName="email" autocomplete="email" placeholder="you@example.com" />@if
+                (forgotPasswordForm.controls.email.touched && forgotPasswordForm.controls.email.invalid) {<small>Enter a
+                    valid email address.</small>}</label>@if (successMessage) { <p class="message success">{{
+                successMessage }}</p> }@if (serverError) { <p class="message error">{{ serverError }}</p> }<button
+                type="submit" [disabled]="isSubmitting">{{ isSubmitting ? 'Creating reset link...' : 'Create reset link'
+                }} <span aria-hidden="true">-&gt;</span></button></form>
+        } @else {
+        <form [formGroup]="resetPasswordForm" (ngSubmit)="resetPassword()" novalidate><label>New password<input
+                    type="password" formControlName="password" autocomplete="new-password"
+                    placeholder="6+ characters" />@if (resetPasswordForm.controls.password.touched &&
+                resetPasswordForm.controls.password.invalid) {<small>Use at least 6
+                    characters.</small>}</label><label>Confirm password<input type="password"
+                    formControlName="passwordConfirmation" autocomplete="new-password"
+                    placeholder="Repeat password" />@if (resetPasswordMismatch) {<small>Passwords must
+                    match.</small>}</label>@if (successMessage) { <p class="message success">{{ successMessage }}</p>
+            }@if (serverError) { <p class="message error">{{ serverError }}</p> }<button type="submit"
+                [disabled]="isSubmitting">{{ isSubmitting ? 'Resetting password...' : 'Reset password' }} <span
+                    aria-hidden="true">-&gt;</span></button></form>
         }
     </section>
 </main>
@@ -75,10 +99,11 @@
 <main class="dashboard-shell">
     <header class="topbar">
         <a class="brand" href="#home" aria-label="Shiftwork home">SHIFT<span>WORK</span></a>
-        <nav aria-label="Main navigation"><button type="button" [class.active]="activeView === (isAdministrator ? 'adminHome' : 'home')"
-            (click)="navigate(isAdministrator ? 'adminHome' : 'home')">Home</button><button type="button" [class.active]="activeView === 'shifts'"
-                (click)="navigate('shifts')">My shifts</button><button type="button"
-                [class.active]="activeView === 'add'" (click)="navigate('add')">Add a
+        <nav aria-label="Main navigation"><button type="button"
+                [class.active]="activeView === (isAdministrator ? 'adminHome' : 'home')"
+                (click)="navigate(isAdministrator ? 'adminHome' : 'home')">Home</button><button type="button"
+                [class.active]="activeView === 'shifts'" (click)="navigate('shifts')">My shifts</button><button
+                type="button" [class.active]="activeView === 'add'" (click)="navigate('add')">Add a
                 shift</button><button type="button" [class.active]="activeView === 'profile'"
                 (click)="navigate('profile')">Edit profile</button></nav>
         @if (isAdministrator) {
@@ -94,9 +119,30 @@
     </header>
     @if (isAdministrator && activeView === 'adminHome') {
     <section class="dashboard-content admin-page">
-        <div class="dashboard-heading"><div><p class="eyebrow">ADMINISTRATOR / OVERVIEW</p><h1>Team overview</h1><p>Keep an eye on workers, shifts and team earnings.</p></div></div>
-        <div class="stats-grid"><article class="stat-card"><span class="stat-label">Total workers</span><strong>{{ adminSummary.workerCount }}</strong><small>Active worker profiles</small></article><article class="stat-card accent-card"><span class="stat-label">Total shifts</span><strong>{{ adminSummary.shiftCount }}</strong><small>Across the whole team</small></article><article class="stat-card"><span class="stat-label">Monthly earnings</span><strong>${{ adminSummary.monthlyEarnings | number:'1.2-2' }}</strong><small>Based on recorded shifts</small></article></div>
-        <div class="admin-highlight"><div><p class="eyebrow">WORKER OF THE MONTH</p><h2>{{ adminSummary.workerOfMonth.name }}</h2><p>{{ adminSummary.workerOfMonth.shiftCount }} shifts recorded this period.</p></div><button type="button" class="primary-action" (click)="navigate('workers')">View all workers &rarr;</button></div>
+        <div class="dashboard-heading">
+            <div>
+                <p class="eyebrow">ADMINISTRATOR / OVERVIEW</p>
+                <h1>Team overview</h1>
+                <p>Keep an eye on workers, shifts and team earnings.</p>
+            </div>
+        </div>
+        <div class="stats-grid">
+            <article class="stat-card"><span class="stat-label">Total workers</span><strong>{{ adminSummary.workerCount
+                    }}</strong><small>Active worker profiles</small></article>
+            <article class="stat-card accent-card"><span class="stat-label">Total shifts</span><strong>{{
+                    adminSummary.shiftCount }}</strong><small>Across the whole team</small></article>
+            <article class="stat-card"><span class="stat-label">Monthly earnings</span><strong>${{
+                    adminSummary.monthlyEarnings | number:'1.2-2' }}</strong><small>Based on recorded shifts</small>
+            </article>
+        </div>
+        <div class="admin-highlight">
+            <div>
+                <p class="eyebrow">WORKER OF THE MONTH</p>
+                <h2>{{ adminSummary.workerOfMonth.name }}</h2>
+                <p>{{ adminSummary.workerOfMonth.shiftCount }} shifts recorded this period.</p>
+            </div><button type="button" class="primary-action" (click)="navigate('workers')">View all workers
+                &rarr;</button>
+        </div>
     </section>
     } @else if (activeView === 'home') {
     <section class="dashboard-content">
@@ -308,10 +354,20 @@
                 <p>Review every worker shift across the team.</p>
             </div>
         </div>
-        <section class="filter-bar admin-filter-bar" aria-label="Administrator shift filters"><label>Worker name<input type="search" [(ngModel)]="adminWorkerFilter" placeholder="Search worker" /></label><label>Shift place<select [(ngModel)]="adminPlaceFilter"><option value="">All places</option><option value="Northside Cafe">Northside Cafe</option><option value="Harbor House">Harbor House</option><option value="The Green Room">The Green Room</option></select></label><label>From date<input type="date" [(ngModel)]="adminFromDate" /></label><button type="button" class="clear-filter" (click)="adminWorkerFilter = ''; adminPlaceFilter = ''; adminFromDate = ''">Clear filters</button></section>
+        <section class="filter-bar admin-filter-bar" aria-label="Administrator shift filters"><label>Worker name<input
+                    type="search" [(ngModel)]="adminWorkerFilter" placeholder="Search worker" /></label><label>Shift
+                place<select [(ngModel)]="adminPlaceFilter">
+                    <option value="">All places</option>
+                    <option value="Northside Cafe">Northside Cafe</option>
+                    <option value="Harbor House">Harbor House</option>
+                    <option value="The Green Room">The Green Room</option>
+                </select></label><label>From date<input type="date" [(ngModel)]="adminFromDate" /></label><button
+                type="button" class="clear-filter"
+                (click)="adminWorkerFilter = ''; adminPlaceFilter = ''; adminFromDate = ''">Clear filters</button>
+        </section>
         <section class="shift-table-wrap">
             <div class="table-summary">
-            <span>{{ filteredAdminShifts.length }} shifts found</span>
+                <span>{{ filteredAdminShifts.length }} shifts found</span>
                 <span>Team schedule</span>
             </div>
             <div class="shift-table admin-shift-table">
@@ -358,7 +414,10 @@
                     <p>{{ worker.email }}</p>
                     <small>Birth date: {{ worker.birthDate | date:'MMM d, y' }}</small>
                 </div>
-                <button type="button" class="secondary-action" (click)="openWorkerEdit(worker)">Edit worker</button><button type="button" class="secondary-action" (click)="openWorkerShifts(worker)">View shifts</button><button type="button" class="secondary-action" (click)="promoteWorker(worker)">Make administrator</button>
+                <button type="button" class="secondary-action" (click)="openWorkerEdit(worker)">Edit
+                    worker</button><button type="button" class="secondary-action"
+                    (click)="openWorkerShifts(worker)">View shifts</button><button type="button"
+                    class="secondary-action" (click)="promoteWorker(worker)">Make administrator</button>
             </article>
             }
             @empty {
@@ -368,13 +427,76 @@
     </section>
     } @else if (activeView === 'workerEdit') {
     <section class="dashboard-content admin-page">
-        <div class="dashboard-heading"><div><p class="eyebrow">ADMINISTRATOR / WORKER PROFILE</p><h1>Edit worker</h1><p>Update this worker's details or remove the worker from the team.</p></div><button type="button" class="primary-action" (click)="navigate('workers')">&larr; All workers</button></div>
-        <section class="profile-layout"><form class="shift-form" [formGroup]="profileForm" (ngSubmit)="updateWorker()" novalidate><div class="section-heading"><div><p class="eyebrow">WORKER DETAILS</p><h2>Profile information</h2></div></div><div class="field-row"><label>First name<input type="text" formControlName="firstName" />@if (profileForm.controls.firstName.touched && profileForm.controls.firstName.invalid) {<small>Enter at least 2 characters.</small>}</label><label>Last name<input type="text" formControlName="lastName" />@if (profileForm.controls.lastName.touched && profileForm.controls.lastName.invalid) {<small>Enter at least 2 characters.</small>}</label></div><label>Email address<input type="email" formControlName="email" />@if (profileForm.controls.email.touched && profileForm.controls.email.invalid) {<small>Enter a valid email address.</small>}</label><label>Birth date<input type="date" formControlName="birthDate" />@if (profileForm.controls.birthDate.touched && profileForm.controls.birthDate.invalid) {<small>Birth date is required.</small>}</label><div class="profile-divider"><p class="eyebrow">SECURITY</p><h2>Reset password</h2><p>Leave empty to keep the current password.</p></div><div class="field-row"><label>New password<input type="password" formControlName="password" />@if (profileForm.controls.password.touched && profileForm.controls.password.invalid) {<small>Use at least 6 characters.</small>}</label><label>Confirm password<input type="password" formControlName="passwordConfirmation" />@if (profilePasswordMismatch) {<small>Passwords must match.</small>}</label></div>@if (adminWorkerMessage) {<p class="message success">{{ adminWorkerMessage }}</p>}@if (serverError) {<p class="message error">{{ serverError }}</p>}<div class="form-actions"><button type="button" class="secondary-action danger-action" (click)="deleteWorker()" [disabled]="isSubmitting">Delete worker</button><button type="submit" class="primary-action" [disabled]="isSubmitting">{{ isSubmitting ? 'Updating worker...' : 'Update worker' }} <span aria-hidden="true">-&gt;</span></button></div></form><aside class="shift-tip"><p class="eyebrow">ADMIN CONTROL</p><h2>Keep the team accurate.</h2><p>Changes apply immediately to this worker's account. Deleting a worker also removes their linked shifts.</p></aside></section>
+        <div class="dashboard-heading">
+            <div>
+                <p class="eyebrow">ADMINISTRATOR / WORKER PROFILE</p>
+                <h1>Edit worker</h1>
+                <p>Update this worker's details or remove the worker from the team.</p>
+            </div><button type="button" class="primary-action" (click)="navigate('workers')">&larr; All workers</button>
+        </div>
+        <section class="profile-layout">
+            <form class="shift-form" [formGroup]="profileForm" (ngSubmit)="updateWorker()" novalidate>
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">WORKER DETAILS</p>
+                        <h2>Profile information</h2>
+                    </div>
+                </div>
+                <div class="field-row"><label>First name<input type="text" formControlName="firstName" />@if
+                        (profileForm.controls.firstName.touched && profileForm.controls.firstName.invalid) {<small>Enter
+                            at least 2 characters.</small>}</label><label>Last name<input type="text"
+                            formControlName="lastName" />@if (profileForm.controls.lastName.touched &&
+                        profileForm.controls.lastName.invalid) {<small>Enter at least 2 characters.</small>}</label>
+                </div><label>Email address<input type="email" formControlName="email" />@if
+                    (profileForm.controls.email.touched && profileForm.controls.email.invalid) {<small>Enter a valid
+                        email address.</small>}</label><label>Birth date<input type="date"
+                        formControlName="birthDate" />@if (profileForm.controls.birthDate.touched &&
+                    profileForm.controls.birthDate.invalid) {<small>Birth date is required.</small>}</label>
+                <div class="profile-divider">
+                    <p class="eyebrow">SECURITY</p>
+                    <h2>Reset password</h2>
+                    <p>Leave empty to keep the current password.</p>
+                </div>
+                <div class="field-row"><label>New password<input type="password" formControlName="password" />@if
+                        (profileForm.controls.password.touched && profileForm.controls.password.invalid) {<small>Use at
+                            least 6 characters.</small>}</label><label>Confirm password<input type="password"
+                            formControlName="passwordConfirmation" />@if (profilePasswordMismatch) {<small>Passwords
+                            must match.</small>}</label></div>@if (adminWorkerMessage) {<p class="message success">{{
+                    adminWorkerMessage }}</p>}@if (serverError) {<p class="message error">{{ serverError }}</p>}<div
+                    class="form-actions"><button type="button" class="secondary-action danger-action"
+                        (click)="deleteWorker()" [disabled]="isSubmitting">Delete worker</button><button type="submit"
+                        class="primary-action" [disabled]="isSubmitting">{{ isSubmitting ? 'Updating worker...' :
+                        'Update worker' }} <span aria-hidden="true">-&gt;</span></button></div>
+            </form>
+            <aside class="shift-tip">
+                <p class="eyebrow">ADMIN CONTROL</p>
+                <h2>Keep the team accurate.</h2>
+                <p>Changes apply immediately to this worker's account. Deleting a worker also removes their linked
+                    shifts.</p>
+            </aside>
+        </section>
     </section>
     } @else {
     <section class="dashboard-content admin-page">
-        <div class="dashboard-heading"><div><p class="eyebrow">ADMINISTRATOR / WORKER DETAIL</p><h1>{{ selectedWorker?.firstName }}'s shifts</h1><p>Review all shifts assigned to {{ selectedWorker?.firstName }} {{ selectedWorker?.lastName }}.</p></div><button type="button" class="primary-action" (click)="navigate('workers')">&larr; All workers</button></div>
-        <section class="shift-table-wrap"><div class="table-summary"><span>{{ workerShifts.length }} shifts found</span><span>{{ selectedWorker?.email }}</span></div><div class="shift-table admin-shift-table"><div class="table-row table-header"><span>Worker</span><span>Date</span><span>Beginning time</span><span>End time</span><span>Price per hour</span><span>Shift place</span></div>@for (shift of workerShifts; track shift._id) {<div class="table-row table-data admin-row"><span>{{ shift.shiftName }}</span><span>{{ shift.date }}</span><span>{{ shift.startTime }}</span><span>{{ shift.endTime }}</span><span>${{ shift.hourlyWage }}.00</span><span>{{ shift.workplace }}</span></div>} @empty {<p class="empty-state">No shifts found for this worker.</p>}</div></section>
+        <div class="dashboard-heading">
+            <div>
+                <p class="eyebrow">ADMINISTRATOR / WORKER DETAIL</p>
+                <h1>{{ selectedWorker?.firstName }}'s shifts</h1>
+                <p>Review all shifts assigned to {{ selectedWorker?.firstName }} {{ selectedWorker?.lastName }}.</p>
+            </div><button type="button" class="primary-action" (click)="navigate('workers')">&larr; All workers</button>
+        </div>
+        <section class="shift-table-wrap">
+            <div class="table-summary"><span>{{ workerShifts.length }} shifts found</span><span>{{ selectedWorker?.email
+                    }}</span></div>
+            <div class="shift-table admin-shift-table">
+                <div class="table-row table-header"><span>Worker</span><span>Date</span><span>Beginning
+                        time</span><span>End time</span><span>Price per hour</span><span>Shift place</span></div>@for
+                (shift of workerShifts; track shift._id) {<div class="table-row table-data admin-row"><span>{{
+                        shift.shiftName }}</span><span>{{ shift.date }}</span><span>{{ shift.startTime }}</span><span>{{
+                        shift.endTime }}</span><span>${{ shift.hourlyWage }}.00</span><span>{{ shift.workplace }}</span>
+                </div>} @empty {<p class="empty-state">No shifts found for this worker.</p>}
+            </div>
+        </section>
     </section>
     }
 </main>
