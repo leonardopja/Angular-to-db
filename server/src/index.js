@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 
 dotenv.config();
@@ -41,6 +42,23 @@ app.post('/api/auth/register', async (request, response) => {
     } catch (error) {
         if (error.code === 11000) return response.status(409).json({ message: 'An account with this email already exists.' });
         return response.status(500).json({ message: 'Unable to create the account.' });
+    }
+});
+
+app.post('/api/auth/login', async (request, response) => {
+    try {
+        const { email, password } = request.body;
+        if (!email || !password) return response.status(400).json({ message: 'Email and password are required.' });
+        if (!process.env.MONGODB_URI) return response.status(503).json({ message: 'Database is not configured yet.' });
+
+        const user = await User.findOne({ email: email.toLowerCase().trim() });
+        const validPassword = user ? await bcrypt.compare(password, user.password) : false;
+        if (!user || !validPassword) return response.status(401).json({ message: 'Invalid email or password.' });
+
+        const token = jwt.sign({ userId: user._id.toString(), email: user.email }, process.env.JWT_SECRET || 'development-secret', { expiresIn: '60m' });
+        return response.json({ token, expiresIn: 3600, user: { firstName: user.firstName, lastName: user.lastName, email: user.email } });
+    } catch (_error) {
+        return response.status(500).json({ message: 'Unable to sign in.' });
     }
 });
 

@@ -80,6 +80,21 @@ a {
     font-weight: 700;
 }
 
+.mode-link {
+    display: inline;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: #d65a31;
+    font: inherit;
+    font-weight: 700;
+}
+
+.mode-link:hover {
+    background: transparent;
+    color: #b94725;
+}
+
 form {
     display: grid;
     gap: 1.15rem;

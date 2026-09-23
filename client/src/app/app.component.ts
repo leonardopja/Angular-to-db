@@ -3,6 +3,7 @@ import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 type RegistrationResponse = { message: string };
+type LoginResponse = { token: string; expiresIn: number; user: { firstName: string; lastName: string; email: string } };
 
 @Component({
     selector: 'app-root',
@@ -16,6 +17,8 @@ export class AppComponent {
     isSubmitting = false;
     successMessage = '';
     serverError = '';
+    activeMode: 'register' | 'login' = 'register';
+    loggedInUser = '';
 
     readonly registrationForm = this.formBuilder.nonNullable.group({
         email: ['', [Validators.required, Validators.email]],
@@ -26,6 +29,17 @@ export class AppComponent {
         birthDate: ['', Validators.required],
         termsAccepted: [false, Validators.requiredTrue]
     });
+
+    readonly loginForm = this.formBuilder.nonNullable.group({
+        email: ['', [Validators.required, Validators.email]],
+        password: ['', [Validators.required, Validators.minLength(6)]]
+    });
+
+    switchMode(mode: 'register' | 'login'): void {
+        this.activeMode = mode;
+        this.successMessage = '';
+        this.serverError = '';
+    }
 
     get passwordMismatch(): boolean {
         const { password, passwordConfirmation } = this.registrationForm.controls;
@@ -48,6 +62,27 @@ export class AppComponent {
             },
             error: (error) => {
                 this.serverError = error.error?.message || 'Unable to complete registration.';
+                this.isSubmitting = false;
+            }
+        });
+    }
+
+    submitLogin(): void {
+        this.successMessage = '';
+        this.serverError = '';
+        this.loginForm.markAllAsTouched();
+        if (this.loginForm.invalid) return;
+
+        this.isSubmitting = true;
+        this.http.post<LoginResponse>('http://localhost:3000/api/auth/login', this.loginForm.getRawValue()).subscribe({
+            next: (response) => {
+                localStorage.setItem('shiftwork_token', response.token);
+                this.loggedInUser = response.user.firstName;
+                this.successMessage = `Welcome back, ${response.user.firstName}!`;
+                this.isSubmitting = false;
+            },
+            error: (error) => {
+                this.serverError = error.error?.message || 'Unable to sign in.';
                 this.isSubmitting = false;
             }
         });
