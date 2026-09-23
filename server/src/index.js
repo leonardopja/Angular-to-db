@@ -82,9 +82,40 @@ app.post('/api/auth/login', async (request, response) => {
         if (!user || !validPassword) return response.status(401).json({ message: 'Invalid email or password.' });
 
         const token = jwt.sign({ userId: user._id.toString(), email: user.email }, process.env.JWT_SECRET || 'development-secret', { expiresIn: '60m' });
-        return response.json({ token, expiresIn: 3600, user: { firstName: user.firstName, lastName: user.lastName, email: user.email } });
+        return response.json({ token, expiresIn: 3600, user: { firstName: user.firstName, lastName: user.lastName, email: user.email, birthDate: user.birthDate } });
     } catch (_error) {
         return response.status(500).json({ message: 'Unable to sign in.' });
+    }
+});
+
+app.get('/api/me', authenticate, async (request, response) => {
+    try {
+        const user = await User.findById(request.user.userId).select('-password');
+        if (!user) return response.status(404).json({ message: 'User profile was not found.' });
+        return response.json(user);
+    } catch (_error) {
+        return response.status(500).json({ message: 'Unable to load the profile.' });
+    }
+});
+
+app.put('/api/me', authenticate, async (request, response) => {
+    try {
+        const { email, password, passwordConfirmation, firstName, lastName, birthDate } = request.body;
+        if (!email || !firstName || !lastName || !birthDate) {
+            return response.status(400).json({ message: 'Email, name and birth date are required.' });
+        }
+        if (password && (password.length < 6 || password !== passwordConfirmation)) {
+            return response.status(400).json({ message: 'New passwords must match and contain at least 6 characters.' });
+        }
+
+        const updates = { email, firstName, lastName, birthDate };
+        if (password) updates.password = await bcrypt.hash(password, 12);
+        const user = await User.findByIdAndUpdate(request.user.userId, updates, { new: true, runValidators: true }).select('-password');
+        if (!user) return response.status(404).json({ message: 'User profile was not found.' });
+        return response.json({ message: 'Your profile was updated successfully.', user });
+    } catch (error) {
+        if (error.code === 11000) return response.status(409).json({ message: 'An account with this email already exists.' });
+        return response.status(500).json({ message: 'Unable to update the profile.' });
     }
 });
 

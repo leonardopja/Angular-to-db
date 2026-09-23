@@ -4,7 +4,7 @@ import { Component, inject } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 
 type RegistrationResponse = { message: string };
-type LoginResponse = { token: string; expiresIn: number; user: { firstName: string; lastName: string; email: string } };
+type LoginResponse = { token: string; expiresIn: number; user: { firstName: string; lastName: string; email: string; birthDate: string } };
 type Shift = { date: string; day: string; month: string; start: string; end: string; rate: number; place: string; name: string };
 type ApiShift = { _id: string; date: string; startTime: string; endTime: string; hourlyWage: number; workplace: string; shiftName: string };
 
@@ -22,7 +22,7 @@ export class AppComponent {
     serverError = '';
     activeMode: 'register' | 'login' = 'register';
     loggedInUser = '';
-    activeView: 'home' | 'shifts' | 'add' = 'home';
+    activeView: 'home' | 'shifts' | 'add' | 'profile' = 'home';
     shiftPlaceFilter = '';
     shiftDateFilter = '';
     addShiftMessage = '';
@@ -59,6 +59,15 @@ export class AppComponent {
         comments: ['']
     });
 
+    readonly profileForm = this.formBuilder.nonNullable.group({
+        email: ['', [Validators.required, Validators.email]],
+        password: ['', Validators.minLength(6)],
+        passwordConfirmation: [''],
+        firstName: ['', [Validators.required, Validators.minLength(2)]],
+        lastName: ['', [Validators.required, Validators.minLength(2)]],
+        birthDate: ['', Validators.required]
+    });
+
     get filteredShifts() {
         return this.shifts.filter((shift) => {
             const matchesPlace = !this.shiftPlaceFilter || shift.place === this.shiftPlaceFilter;
@@ -73,9 +82,37 @@ export class AppComponent {
         this.serverError = '';
     }
 
-    navigate(view: 'home' | 'shifts' | 'add'): void {
+    navigate(view: 'home' | 'shifts' | 'add' | 'profile'): void {
         this.activeView = view;
         this.addShiftMessage = '';
+        this.serverError = '';
+        if (view === 'profile') this.loadProfile();
+    }
+
+    get profilePasswordMismatch(): boolean {
+        const { password, passwordConfirmation } = this.profileForm.controls;
+        return passwordConfirmation.touched && password.value !== passwordConfirmation.value;
+    }
+
+    updateProfile(): void {
+        this.successMessage = '';
+        this.serverError = '';
+        this.profileForm.markAllAsTouched();
+        if (this.profileForm.invalid || this.profilePasswordMismatch) return;
+
+        this.isSubmitting = true;
+        this.http.put<{ message: string; user: LoginResponse['user'] }>('http://localhost:3000/api/me', this.profileForm.getRawValue(), { headers: this.authHeaders() }).subscribe({
+            next: (response) => {
+                this.loggedInUser = response.user.firstName;
+                this.successMessage = response.message;
+                this.profileForm.patchValue({ password: '', passwordConfirmation: '' });
+                this.isSubmitting = false;
+            },
+            error: (error) => {
+                this.serverError = error.error?.message || 'Unable to update the profile.';
+                this.isSubmitting = false;
+            }
+        });
     }
 
     saveShift(): void {
@@ -136,6 +173,7 @@ export class AppComponent {
                 localStorage.setItem('shiftwork_token', response.token);
                 this.loggedInUser = response.user.firstName;
                 this.successMessage = `Welcome back, ${response.user.firstName}!`;
+                this.profileForm.patchValue(response.user);
                 this.isSubmitting = false;
                 this.loadShifts();
             },
@@ -150,6 +188,13 @@ export class AppComponent {
         this.http.get<ApiShift[]>('http://localhost:3000/api/shifts', { headers: this.authHeaders() }).subscribe({
             next: (apiShifts) => this.shifts = apiShifts.map((shift) => this.toDisplayShift(shift)),
             error: (error) => this.serverError = error.error?.message || 'Unable to load shifts.'
+        });
+    }
+
+    private loadProfile(): void {
+        this.http.get<LoginResponse['user']>('http://localhost:3000/api/me', { headers: this.authHeaders() }).subscribe({
+            next: (user) => this.profileForm.patchValue(user),
+            error: (error) => this.serverError = error.error?.message || 'Unable to load the profile.'
         });
     }
 

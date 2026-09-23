@@ -589,6 +589,9 @@ button:disabled {
 .shift-tip > p:not(.eyebrow) { color: #b3c9d9; font-size: .9rem; line-height: 1.7; }
 .tip-line { display: flex; gap: .8rem; border-top: 1px solid #31506a; color: #dbe8f1; font-size: .78rem; padding: 1rem 0; }
 .tip-line span:first-child { color: #ef8354; font-weight: 700; }
+.profile-divider { border-top: 1px solid #e3ebf1; padding-top: 1.2rem; }
+.profile-divider h2 { font-size: 1.2rem; }
+.profile-divider p:last-child { color: #7890a4; font-size: .8rem; margin: .4rem 0 0; }
 
 .message {
     border-radius: 4px;
